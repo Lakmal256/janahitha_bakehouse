@@ -1,0 +1,1123 @@
+{
+ "config": {
+  "catalog": {
+   "items": [
+    {
+     "id": "fish",
+     "name": "Fish",
+     "price": 0
+    },
+    {
+     "id": "bread",
+     "name": "Bread",
+     "price": 0
+    },
+    {
+     "id": "jam",
+     "name": "Jam",
+     "price": 0
+    },
+    {
+     "id": "kimbula",
+     "name": "Kimbula",
+     "price": 0
+    },
+    {
+     "id": "keels",
+     "name": "Keels",
+     "price": 0
+    },
+    {
+     "id": "keels_s",
+     "name": "* Keels",
+     "price": 0
+    },
+    {
+     "id": "kala",
+     "name": "Kala",
+     "price": 0
+    },
+    {
+     "id": "pastry",
+     "name": "Pastry",
+     "price": 0
+    },
+    {
+     "id": "saman",
+     "name": "Saman",
+     "price": 0
+    },
+    {
+     "id": "ada",
+     "name": "Ada",
+     "price": 0
+    },
+    {
+     "id": "rcake",
+     "name": "R Cake",
+     "price": 0
+    },
+    {
+     "id": "vcake",
+     "name": "V Cake",
+     "price": 0
+    },
+    {
+     "id": "sini",
+     "name": "Sini",
+     "price": 0
+    },
+    {
+     "id": "multi",
+     "name": "Multi",
+     "price": 0
+    },
+    {
+     "id": "dagara",
+     "name": "Dagara",
+     "price": 0
+    },
+    {
+     "id": "sinisam",
+     "name": "Sini Sambal",
+     "price": 0
+    },
+    {
+     "id": "egg",
+     "name": "Egg",
+     "price": 0
+    },
+    {
+     "id": "sp",
+     "name": "SP",
+     "price": 0
+    },
+    {
+     "id": "milo",
+     "name": "Milo Box",
+     "price": 0
+    },
+    {
+     "id": "proll",
+     "name": "P Roll",
+     "price": 0
+    },
+    {
+     "id": "kp",
+     "name": "KP",
+     "price": 0
+    },
+    {
+     "id": "bp",
+     "name": "BP",
+     "price": 0
+    },
+    {
+     "id": "cream",
+     "name": "Cream",
+     "price": 0
+    },
+    {
+     "id": "double",
+     "name": "Double",
+     "price": 0
+    },
+    {
+     "id": "pizza",
+     "name": "Pizza",
+     "price": 0
+    },
+    {
+     "id": "cake",
+     "name": "Cake",
+     "price": 0
+    },
+    {
+     "id": "tbun",
+     "name": "T Bun",
+     "price": 0
+    },
+    {
+     "id": "bola",
+     "name": "Bola",
+     "price": 0
+    },
+    {
+     "id": "sliced",
+     "name": "Sliced",
+     "price": 0
+    },
+    {
+     "id": "family",
+     "name": "Family",
+     "price": 0
+    },
+    {
+     "id": "nice",
+     "name": "Nice",
+     "price": 0
+    },
+    {
+     "id": "achchu",
+     "name": "Achchu",
+     "price": 0
+    },
+    {
+     "id": "thati",
+     "name": "Thati",
+     "price": 0
+    }
+   ]
+  }
+ },
+ "routes": {
+  "sujith": {
+   "name": "Sujith",
+   "driver": "Sujith",
+   "order": 1
+  },
+  "boss": {
+   "name": "Boss",
+   "driver": "Boss",
+   "order": 2
+  },
+  "darshana": {
+   "name": "Darshana",
+   "driver": "Darshana",
+   "order": 3
+  },
+  "route4": {
+   "name": "Route 4",
+   "driver": "",
+   "order": 4
+  },
+  "mama": {
+   "name": "Mama",
+   "driver": "Mama",
+   "order": 5
+  }
+ },
+ "shops": {
+  "sujith-01": {
+   "name": "Jawaththa",
+   "routeId": "sujith",
+   "items": [
+    "fish",
+    "bread",
+    "jam",
+    "kimbula",
+    "keels",
+    "kala",
+    "pastry",
+    "saman"
+   ],
+   "order": 1
+  },
+  "sujith-02": {
+   "name": "J. Handiya",
+   "routeId": "sujith",
+   "items": [
+    "bread",
+    "kala",
+    "fish",
+    "pastry",
+    "jam",
+    "kimbula",
+    "saman",
+    "keels",
+    "ada",
+    "rcake",
+    "vcake"
+   ],
+   "order": 2
+  },
+  "sujith-03": {
+   "name": "Es Wattuwa",
+   "routeId": "sujith",
+   "items": [
+    "fish",
+    "kimbula",
+    "jam",
+    "sini",
+    "multi",
+    "dagara",
+    "sinisam",
+    "keels",
+    "pastry",
+    "bread",
+    "saman",
+    "kala"
+   ],
+   "order": 3
+  },
+  "sujith-04": {
+   "name": "Asiri",
+   "routeId": "sujith",
+   "items": [
+    "proll",
+    "kala",
+    "kp",
+    "bp",
+    "pastry",
+    "fish",
+    "keels",
+    "sinisam",
+    "sp",
+    "cream",
+    "double"
+   ],
+   "order": 4
+  },
+  "sujith-05": {
+   "name": "Police Park",
+   "routeId": "sujith",
+   "items": [
+    "fish",
+    "kimbula",
+    "jam",
+    "keels",
+    "pastry",
+    "sinisam",
+    "bread",
+    "keels_s",
+    "egg",
+    "saman",
+    "multi",
+    "dagara",
+    "sini",
+    "kala",
+    "ada",
+    "sp",
+    "vcake",
+    "rcake",
+    "double",
+    "cream",
+    "milo"
+   ],
+   "order": 5
+  },
+  "sujith-06": {
+   "name": "Kalubowila",
+   "routeId": "sujith",
+   "items": [
+    "pastry",
+    "kp",
+    "bp",
+    "pizza"
+   ],
+   "order": 6
+  },
+  "sujith-07": {
+   "name": "P Roll",
+   "routeId": "sujith",
+   "items": [
+    "kp",
+    "egg",
+    "sp",
+    "ada",
+    "cake",
+    "cream",
+    "tbun",
+    "double",
+    "pizza"
+   ],
+   "order": 7
+  },
+  "sujith-08": {
+   "name": "Marad. Ashoka",
+   "routeId": "sujith",
+   "items": [
+    "proll",
+    "bola",
+    "fish",
+    "pastry",
+    "kimbula",
+    "jam",
+    "bread",
+    "multi",
+    "dagara",
+    "sini",
+    "sliced"
+   ],
+   "order": 8
+  },
+  "boss-01": {
+   "name": "Soysa Laga",
+   "routeId": "boss",
+   "items": [
+    "fish",
+    "kp",
+    "keels",
+    "saman"
+   ],
+   "order": 1
+  },
+  "boss-02": {
+   "name": "Usawiya",
+   "routeId": "boss",
+   "items": [
+    "fish",
+    "pastry",
+    "proll",
+    "bola",
+    "keels",
+    "kimbula",
+    "jam",
+    "saman",
+    "sinisam",
+    "double",
+    "cream",
+    "rcake",
+    "sp"
+   ],
+   "order": 2
+  },
+  "boss-03": {
+   "name": "Police S M",
+   "routeId": "boss",
+   "items": [
+    "cream",
+    "double",
+    "pizza",
+    "sp",
+    "rcake",
+    "vcake",
+    "fish",
+    "pastry",
+    "bp",
+    "kp",
+    "jam",
+    "kimbula"
+   ],
+   "order": 3
+  },
+  "boss-04": {
+   "name": "Central 3",
+   "routeId": "boss",
+   "items": [
+    "bread",
+    "pastry",
+    "fish",
+    "egg",
+    "saman",
+    "double",
+    "tbun",
+    "family"
+   ],
+   "order": 4
+  },
+  "boss-05": {
+   "name": "Ranjani OPD",
+   "routeId": "boss",
+   "items": [
+    "fish",
+    "tbun",
+    "double",
+    "saman",
+    "keels"
+   ],
+   "order": 5
+  },
+  "boss-06": {
+   "name": "Medical Faculty",
+   "routeId": "boss",
+   "items": [
+    "bread",
+    "proll",
+    "fish",
+    "sinisam",
+    "kimbula",
+    "jam",
+    "sp",
+    "pastry"
+   ],
+   "order": 6
+  },
+  "boss-07": {
+   "name": "Wasana 2",
+   "routeId": "boss",
+   "items": [
+    "fish",
+    "pastry",
+    "sinisam",
+    "saman",
+    "jam",
+    "kimbula",
+    "kala"
+   ],
+   "order": 7
+  },
+  "boss-08": {
+   "name": "Colombo Campus",
+   "routeId": "boss",
+   "items": [
+    "fish",
+    "proll",
+    "bread",
+    "pastry"
+   ],
+   "order": 8
+  },
+  "boss-09": {
+   "name": "Central Akka",
+   "routeId": "boss",
+   "items": [
+    "bread",
+    "kala",
+    "egg",
+    "fish",
+    "keels",
+    "ada",
+    "cream",
+    "double",
+    "rcake",
+    "vcake",
+    "saman",
+    "pastry",
+    "family",
+    "sp",
+    "kp",
+    "bp"
+   ],
+   "order": 9
+  },
+  "boss-10": {
+   "name": "Paththara Kade",
+   "routeId": "boss",
+   "items": [
+    "bread",
+    "kala",
+    "fish",
+    "kimbula",
+    "jam",
+    "keels",
+    "pastry",
+    "proll",
+    "rcake",
+    "vcake",
+    "sp",
+    "ada",
+    "pizza"
+   ],
+   "order": 10
+  },
+  "boss-11": {
+   "name": "Cafe 7",
+   "routeId": "boss",
+   "items": [
+    "fish",
+    "saman",
+    "keels",
+    "sinisam",
+    "egg",
+    "keels_s",
+    "cake",
+    "sp",
+    "sliced",
+    "double"
+   ],
+   "order": 11
+  },
+  "boss-12": {
+   "name": "Lorry",
+   "routeId": "boss",
+   "items": [
+    "cream",
+    "double",
+    "proll",
+    "pastry",
+    "keels",
+    "fish",
+    "bread"
+   ],
+   "order": 12
+  },
+  "darshana-01": {
+   "name": "Maradana 2",
+   "routeId": "darshana",
+   "items": [
+    "fish",
+    "pastry"
+   ],
+   "order": 1
+  },
+  "darshana-02": {
+   "name": "Maradana Station",
+   "routeId": "darshana",
+   "items": [
+    "fish",
+    "pastry"
+   ],
+   "order": 2
+  },
+  "darshana-03": {
+   "name": "Thunmulla",
+   "routeId": "darshana",
+   "items": [
+    "fish",
+    "kimbula",
+    "jam",
+    "multi",
+    "keels",
+    "pastry",
+    "proll",
+    "egg",
+    "bread",
+    "kala",
+    "bp",
+    "sini",
+    "kp",
+    "double",
+    "cream",
+    "ada",
+    "rcake",
+    "vcake",
+    "tbun"
+   ],
+   "order": 3
+  },
+  "darshana-04": {
+   "name": "Maradana 4",
+   "routeId": "darshana",
+   "items": [
+    "fish",
+    "pastry",
+    "kimbula",
+    "kp",
+    "double",
+    "family"
+   ],
+   "order": 4
+  },
+  "darshana-05": {
+   "name": "Maradana Pansala",
+   "routeId": "darshana",
+   "items": [
+    "bread",
+    "kala",
+    "fish",
+    "pastry",
+    "keels",
+    "saman",
+    "keels_s",
+    "jam",
+    "egg",
+    "sp",
+    "cream",
+    "double",
+    "milo"
+   ],
+   "order": 5
+  },
+  "darshana-06": {
+   "name": "Mahen",
+   "routeId": "darshana",
+   "items": [
+    "fish",
+    "kimbula",
+    "jam",
+    "pastry",
+    "proll",
+    "bola",
+    "bread",
+    "kala",
+    "kp",
+    "bp",
+    "keels",
+    "rcake",
+    "vcake",
+    "ada"
+   ],
+   "order": 6
+  },
+  "darshana-07": {
+   "name": "Dublication",
+   "routeId": "darshana",
+   "items": [
+    "bread",
+    "tbun",
+    "keels",
+    "fish",
+    "jam",
+    "kimbula",
+    "pastry",
+    "kala",
+    "proll",
+    "sinisam",
+    "ada"
+   ],
+   "order": 7
+  },
+  "darshana-08": {
+   "name": "Dublication 2",
+   "routeId": "darshana",
+   "items": [
+    "bread",
+    "proll",
+    "bola",
+    "keels",
+    "fish",
+    "kp",
+    "bp",
+    "sinisam",
+    "sini",
+    "ada",
+    "double",
+    "sliced",
+    "rcake",
+    "sp",
+    "nice",
+    "milo"
+   ],
+   "order": 8
+  },
+  "darshana-09": {
+   "name": "Maradana New",
+   "routeId": "darshana",
+   "items": [
+    "bread",
+    "kala",
+    "fish",
+    "kimbula",
+    "jam",
+    "keels",
+    "keels_s",
+    "egg",
+    "pastry",
+    "kp",
+    "bp",
+    "cream",
+    "double",
+    "family",
+    "rcake",
+    "vcake",
+    "sp"
+   ],
+   "order": 9
+  },
+  "darshana-10": {
+   "name": "Maradana Main",
+   "routeId": "darshana",
+   "items": [
+    "fish",
+    "pastry",
+    "double",
+    "cream"
+   ],
+   "order": 10
+  },
+  "darshana-11": {
+   "name": "Royal Laga",
+   "routeId": "darshana",
+   "items": [
+    "fish",
+    "pastry",
+    "kimbula",
+    "keels",
+    "bread",
+    "sini",
+    "sinisam",
+    "egg"
+   ],
+   "order": 11
+  },
+  "route4-01": {
+   "name": "Marad. Technical",
+   "routeId": "route4",
+   "items": [
+    "bread",
+    "pastry",
+    "proll",
+    "fish",
+    "sini",
+    "multi",
+    "rcake"
+   ],
+   "order": 1
+  },
+  "route4-02": {
+   "name": "Acland",
+   "routeId": "route4",
+   "items": [
+    "fish",
+    "kp",
+    "bp",
+    "kala",
+    "pastry",
+    "bread"
+   ],
+   "order": 2
+  },
+  "route4-03": {
+   "name": "Kotuwa",
+   "routeId": "route4",
+   "items": [
+    "fish",
+    "kimbula",
+    "jam",
+    "bread",
+    "pastry",
+    "saman",
+    "tbun",
+    "pizza"
+   ],
+   "order": 3
+  },
+  "route4-04": {
+   "name": "New Shop",
+   "routeId": "route4",
+   "items": [
+    "fish",
+    "proll",
+    "bola",
+    "keels",
+    "bread",
+    "pastry",
+    "rcake",
+    "sp",
+    "kala"
+   ],
+   "order": 4
+  },
+  "route4-05": {
+   "name": "Li Balika / College",
+   "routeId": "route4",
+   "items": [
+    "pastry",
+    "kimbula",
+    "jam",
+    "keels",
+    "rcake",
+    "sp",
+    "sliced",
+    "proll",
+    "nice"
+   ],
+   "order": 5
+  },
+  "route4-06": {
+   "name": "Ragama",
+   "routeId": "route4",
+   "items": [
+    "fish",
+    "multi",
+    "dagara",
+    "sini",
+    "keels_s",
+    "egg",
+    "saman",
+    "sinisam",
+    "kimbula",
+    "jam",
+    "pastry",
+    "kp",
+    "bp",
+    "bread",
+    "ada",
+    "sp",
+    "rcake",
+    "vcake",
+    "cream",
+    "double",
+    "tbun",
+    "pizza"
+   ],
+   "order": 6
+  },
+  "route4-07": {
+   "name": "Araliya Canteen",
+   "routeId": "route4",
+   "items": [
+    "bread",
+    "fish",
+    "jam",
+    "kimbula",
+    "kala",
+    "sini",
+    "proll",
+    "bola",
+    "sliced",
+    "pastry",
+    "saman",
+    "sinisam"
+   ],
+   "order": 7
+  },
+  "route4-08": {
+   "name": "RNR",
+   "routeId": "route4",
+   "items": [
+    "bread",
+    "fish",
+    "jam",
+    "kimbula"
+   ],
+   "order": 8
+  },
+  "route4-09": {
+   "name": "RO (Office / Ground)",
+   "routeId": "route4",
+   "items": [],
+   "order": 9
+  },
+  "route4-10": {
+   "name": "Technical Department",
+   "routeId": "route4",
+   "items": [
+    "bread",
+    "egg",
+    "kala",
+    "fish"
+   ],
+   "order": 10
+  },
+  "route4-11": {
+   "name": "Port City",
+   "routeId": "route4",
+   "items": [
+    "bread",
+    "kala",
+    "fish",
+    "jam",
+    "kimbula",
+    "egg",
+    "saman",
+    "sinisam",
+    "keels_s",
+    "bp",
+    "rcake",
+    "vcake",
+    "ada",
+    "double",
+    "cream",
+    "family"
+   ],
+   "order": 11
+  },
+  "route4-12": {
+   "name": "Waraya (Port City)",
+   "routeId": "route4",
+   "items": [
+    "fish",
+    "pastry",
+    "egg",
+    "keels_s",
+    "bp",
+    "cream",
+    "double",
+    "sp",
+    "ada",
+    "rcake",
+    "vcake"
+   ],
+   "order": 12
+  },
+  "mama-01": {
+   "name": "Dippitigoda",
+   "routeId": "mama",
+   "items": [
+    "achchu",
+    "thati",
+    "kala",
+    "kimbula",
+    "jam",
+    "sini",
+    "multi",
+    "dagara",
+    "sinisam",
+    "egg",
+    "pastry",
+    "saman",
+    "keels",
+    "fish",
+    "keels_s",
+    "kp",
+    "bp",
+    "double",
+    "sliced",
+    "pizza"
+   ],
+   "order": 1
+  },
+  "mama-02": {
+   "name": "Campus",
+   "routeId": "mama",
+   "items": [
+    "proll",
+    "fish",
+    "kimbula",
+    "jam",
+    "pastry",
+    "bread",
+    "kp",
+    "bp",
+    "keels_s",
+    "sinisam"
+   ],
+   "order": 2
+  },
+  "mama-03": {
+   "name": "Pethiyagoda",
+   "routeId": "mama",
+   "items": [
+    "achchu",
+    "thati",
+    "kala",
+    "kimbula",
+    "jam",
+    "sini",
+    "multi",
+    "dagara",
+    "sinisam",
+    "egg",
+    "keels_s",
+    "saman",
+    "keels",
+    "fish",
+    "pastry",
+    "kp",
+    "bp",
+    "pizza"
+   ],
+   "order": 3
+  },
+  "mama-04": {
+   "name": "Logis",
+   "routeId": "mama",
+   "items": [
+    "fish",
+    "proll",
+    "pastry",
+    "keels",
+    "saman",
+    "kp",
+    "bp"
+   ],
+   "order": 4
+  },
+  "mama-05": {
+   "name": "Dr Upul",
+   "routeId": "mama",
+   "items": [
+    "bola",
+    "bread",
+    "egg",
+    "fish",
+    "pastry",
+    "sinisam",
+    "ada"
+   ],
+   "order": 5
+  },
+  "mama-06": {
+   "name": "Bulugaha Handiya",
+   "routeId": "mama",
+   "items": [
+    "achchu",
+    "thati",
+    "kala",
+    "kimbula",
+    "jam",
+    "sini",
+    "multi",
+    "dagara",
+    "sinisam",
+    "egg",
+    "keels_s",
+    "saman",
+    "keels",
+    "fish",
+    "pastry",
+    "kp",
+    "bp",
+    "pizza"
+   ],
+   "order": 6
+  },
+  "mama-07": {
+   "name": "Viharamahadevi",
+   "routeId": "mama",
+   "items": [
+    "proll",
+    "bread",
+    "fish",
+    "bp",
+    "pizza",
+    "multi",
+    "dagara",
+    "sini"
+   ],
+   "order": 7
+  },
+  "mama-08": {
+   "name": "Pansal Handiya",
+   "routeId": "mama",
+   "items": [
+    "bread",
+    "kala",
+    "kimbula",
+    "jam",
+    "sinisam",
+    "fish"
+   ],
+   "order": 8
+  },
+  "mama-09": {
+   "name": "ROY",
+   "routeId": "mama",
+   "items": [
+    "achchu",
+    "thati",
+    "kala",
+    "kimbula",
+    "egg",
+    "saman",
+    "fish",
+    "keels",
+    "keels_s",
+    "double",
+    "sliced",
+    "cream"
+   ],
+   "order": 9
+  },
+  "mama-10": {
+   "name": "Kanaththa Laga",
+   "routeId": "mama",
+   "items": [
+    "bread",
+    "fish",
+    "kala",
+    "jam",
+    "kimbula"
+   ],
+   "order": 10
+  },
+  "mama-11": {
+   "name": "Gedara Aiya",
+   "routeId": "mama",
+   "items": [
+    "fish",
+    "kimbula",
+    "jam",
+    "pastry",
+    "bread",
+    "kala"
+   ],
+   "order": 11
+  },
+  "mama-12": {
+   "name": "Thorana Handiya",
+   "routeId": "mama",
+   "items": [
+    "bread",
+    "fish",
+    "kimbula",
+    "jam",
+    "pizza",
+    "kala"
+   ],
+   "order": 12
+  }
+ }
+}
