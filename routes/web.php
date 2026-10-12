@@ -2,6 +2,9 @@
 
 use App\Http\Controllers\SetupController;
 use App\Livewire\Admin\Users as UserManagement;
+use App\Livewire\Admin\Items as ItemManagement;
+use App\Livewire\Admin\Routes as RouteManagement;
+use App\Livewire\Admin\Shops as ShopManagement;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -36,5 +39,17 @@ Route::middleware(['auth', 'active'])->group(function (): void {
     Route::get('/admin/users', UserManagement::class)
         ->middleware('can:users')
         ->name('admin.users');
+
+    Route::get('/admin/routes', RouteManagement::class)
+        ->middleware('can:routes')
+        ->name('admin.routes');
+
+    Route::get('/admin/items', ItemManagement::class)
+        ->middleware('can:items')
+        ->name('admin.items');
+
+    Route::get('/admin/shops', ShopManagement::class)
+        ->middleware('can:shops')
+        ->name('admin.shops');
 });
 

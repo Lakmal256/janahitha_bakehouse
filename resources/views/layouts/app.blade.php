@@ -19,10 +19,19 @@
             <header class="border-b border-[#41474b] bg-[#141618]">
                 <div class="mx-auto flex min-h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
                     <a href="{{ route('dashboard') }}" class="font-semibold">Bakehouse Routes</a>
-                    <nav class="flex items-center gap-4 text-sm">
+                    <nav class="flex flex-wrap items-center justify-end gap-x-3 gap-y-1 text-xs sm:gap-4 sm:text-sm">
                         <a href="{{ route('dashboard') }}" class="text-[#d0d1cd] hover:text-white">Dashboard</a>
                         @can('users')
                             <a href="{{ route('admin.users') }}" class="text-[#d0d1cd] hover:text-white">Users</a>
+                        @endcan
+                        @can('routes')
+                            <a href="{{ route('admin.routes') }}" class="text-[#d0d1cd] hover:text-white">Routes</a>
+                        @endcan
+                        @can('items')
+                            <a href="{{ route('admin.items') }}" class="text-[#d0d1cd] hover:text-white">Items</a>
+                        @endcan
+                        @can('shops')
+                            <a href="{{ route('admin.shops') }}" class="text-[#d0d1cd] hover:text-white">Shops</a>
                         @endcan
                         <form method="POST" action="{{ route('logout') }}">
                             @csrf
