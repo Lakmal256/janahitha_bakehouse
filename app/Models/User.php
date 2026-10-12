@@ -12,6 +12,11 @@ use Illuminate\Notifications\Notifiable;
 
 class User extends Authenticatable
 {
+    public const PERMISSIONS = [
+        'orders', 'bills_view', 'bills_generate', 'bills_returns', 'bills_payments',
+        'bills_prices', 'reports', 'shops', 'routes', 'items', 'users',
+    ];
+
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
 
@@ -51,5 +56,56 @@ class User extends Authenticatable
     public function payments(): HasMany
     {
         return $this->hasMany(Payment::class, 'created_by');
+    }
+
+    public static function permissionsForRole(string $role): array
+    {
+        return self::rolePresets()[$role] ?? array_fill_keys(self::PERMISSIONS, false);
+    }
+
+    public static function rolePresets(): array
+    {
+        $admin = array_fill_keys(self::PERMISSIONS, true);
+        $manager = $admin;
+        $manager['users'] = false;
+        $salesman = array_fill_keys(self::PERMISSIONS, false);
+        $viewer = array_fill_keys(self::PERMISSIONS, false);
+
+        foreach (['orders', 'bills_view', 'bills_returns', 'bills_payments'] as $permission) {
+            $salesman[$permission] = true;
+        }
+
+        foreach (['bills_view', 'reports'] as $permission) {
+            $viewer[$permission] = true;
+        }
+
+        return [
+            'admin' => $admin,
+            'manager' => $manager,
+            'salesman' => $salesman,
+            'viewer' => $viewer,
+        ];
+    }
+
+    public function canPermission(string $permission): bool
+    {
+        if ($this->is_owner) {
+            return true;
+        }
+
+        $rolePermissions = self::permissionsForRole($this->role);
+
+        return (bool) ($this->perms[$permission] ?? $rolePermissions[$permission] ?? false);
+    }
+
+    public function canAccessRoute(int|Route $route): bool
+    {
+        if ($this->all_routes) {
+            return true;
+        }
+
+        $routeId = $route instanceof Route ? $route->getKey() : $route;
+
+        return $this->routes()->where('routes.id', $routeId)->exists();
     }
 }

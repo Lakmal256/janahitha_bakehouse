@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
 class Shop extends Model
@@ -36,5 +37,14 @@ class Shop extends Model
     public function bills(): HasMany
     {
         return $this->hasMany(Bill::class);
+    }
+
+    public function scopeVisibleTo(Builder $query, User $user): Builder
+    {
+        if ($user->all_routes) {
+            return $query;
+        }
+
+        return $query->whereIn('route_id', $user->routes()->select('routes.id'));
     }
 }

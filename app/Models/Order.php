@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
 class Order extends Model
@@ -33,5 +34,14 @@ class Order extends Model
     public function lines(): HasMany
     {
         return $this->hasMany(OrderLine::class);
+    }
+
+    public function scopeVisibleTo(Builder $query, User $user): Builder
+    {
+        if ($user->all_routes) {
+            return $query;
+        }
+
+        return $query->whereIn('route_id', $user->routes()->select('routes.id'));
     }
 }
