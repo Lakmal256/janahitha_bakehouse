@@ -523,6 +523,99 @@ const { useState, useEffect, useMemo, useRef } = React;
                 }, 300);
                 return null;
             }
+            function printShopByShopDocument(title, subtitle, shopList) {
+                const frame = document.createElement("iframe");
+                frame.title = `Print ${title}`;
+                frame.style.cssText = "position:fixed;right:0;bottom:0;width:0;height:0;border:0";
+                document.body.appendChild(frame);
+                const popup = frame.contentWindow;
+                const doc = frame.contentDocument || (popup && popup.document);
+                if (!popup || !doc) {
+                    frame.remove();
+                    return "Could not open the print dialog.";
+                }
+                const columnCount = 4;
+                const maxRowsPerPage = 34;
+                const pages = [Array.from({ length: columnCount }, () => [])];
+                shopList.forEach((shop) => {
+                    const itemRows = (shop.items || []).map((item) => ({
+                        type: "item",
+                        name: item.name,
+                        qty: item.qty,
+                    }));
+                    const blockHeight = 1 + itemRows.length;
+                    let targetPage = null;
+                    let targetCol = -1;
+                    for (let p = 0; p < pages.length; p++) {
+                        const pageCols = pages[p];
+                        let minLen = Infinity;
+                        for (let c = 0; c < columnCount; c++) {
+                            const used = pageCols[c].length;
+                            const needed = (used > 0 ? 1 : 0) + blockHeight;
+                            const pageEmpty = pageCols.every((col) => col.length === 0);
+                            if (used + needed <= maxRowsPerPage || (pageEmpty && c === 0)) {
+                                if (used < minLen) {
+                                    minLen = used;
+                                    targetCol = c;
+                                }
+                            }
+                        }
+                        if (targetCol !== -1) {
+                            targetPage = pageCols;
+                            break;
+                        }
+                    }
+                    if (!targetPage) {
+                        targetPage = Array.from({ length: columnCount }, () => []);
+                        pages.push(targetPage);
+                        targetCol = 0;
+                    }
+                    const col = targetPage[targetCol];
+                    if (col.length > 0) {
+                        col.push({ type: "empty" });
+                    }
+                    col.push({
+                        type: "head",
+                        name: shop.name,
+                        total: shop.total,
+                    });
+                    itemRows.forEach((row) => col.push(row));
+                });
+                const renderCell = (cell) => {
+                    if (!cell || cell.type === "empty") {
+                        return `<td class="cell-empty">&nbsp;</td>`;
+                    }
+                    if (cell.type === "head") {
+                        return `<td class="cell-head"><div class="shop-head"><span>${printEscape(cell.name)}</span><span class="shop-pcs">${printEscape(cell.total)} pcs</span></div></td>`;
+                    }
+                    return `<td class="cell-item">${printEscape(cell.name)} - ${printEscape(cell.qty)}</td>`;
+                };
+                const content = pages
+                    .map((pageCols, pageIdx) => {
+                        const rowCount = Math.max(
+                            1,
+                            ...pageCols.map((col) => col.length),
+                        );
+                        const rowsHtml = Array.from(
+                            { length: rowCount },
+                            (_, r) =>
+                                `<tr>${pageCols.map((col) => renderCell(col[r])).join("")}</tr>`,
+                        ).join("");
+                        return `<section class="sheet-page"><header><h1>${printEscape(title)}</h1><p>${printEscape(subtitle)}</p></header><table class="shop-grid"><tbody>${rowsHtml}</tbody></table><footer class="sheet-footer"><span>Janahitha Bake House</span><span>Page ${pageIdx + 1} of ${pages.length}</span></footer></section>`;
+                    })
+                    .join("");
+                doc.open();
+                doc.write(`<!doctype html><html><head><meta charset="utf-8"><title>${printEscape(title)}</title><style>*{box-sizing:border-box}body{font:14px/1.35 Arial,sans-serif;color:#24372b;margin:22px;-webkit-print-color-adjust:exact;print-color-adjust:exact}h1{font-size:22px;margin:0 0 2px}p{color:#526252;margin:0 0 10px;font-size:14px}.sheet-page{break-inside:avoid;page-break-inside:avoid}.sheet-page+.sheet-page{break-before:page;page-break-before:always;margin-top:24px}table.shop-grid{width:100%;border-collapse:collapse;table-layout:fixed;font-size:14px}table.shop-grid td{width:25%;padding:3px 6px;border:1px solid #cbd5c7;text-align:left;vertical-align:middle;height:20px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}table.shop-grid td.cell-head{background:#e9ede6;font-weight:700;color:#1b2a20}table.shop-grid .shop-head{display:flex;justify-content:space-between;align-items:center;gap:6px}table.shop-grid .shop-pcs{font-size:13px;font-weight:700;white-space:nowrap}table.shop-grid tr{break-inside:avoid;page-break-inside:avoid}.sheet-footer{display:flex;justify-content:space-between;align-items:center;margin-top:8px;font-size:13px;color:#526252}@page{size:A4 portrait;margin:10mm}@media print{body{margin:0}.sheet-page+.sheet-page{margin-top:0}}</style></head><body>${content}</body></html>`);
+                doc.close();
+                popup.addEventListener("afterprint", () => frame.remove(), {
+                    once: true,
+                });
+                setTimeout(() => {
+                    popup.focus();
+                    popup.print();
+                }, 300);
+                return null;
+            }
             function downloadPdf(filename, title, subtitle, sections) {
                 return printDocument(title, subtitle, sections);
             }
@@ -1904,24 +1997,6 @@ const { useState, useEffect, useMemo, useRef } = React;
                         sum(Object.values(R.items)),
                     ],
                 ];
-                const shopSections = done.map((shop) => {
-                    const quantities = (R.shops[shop.id] && R.shops[shop.id].q) || {};
-                    const shopTotal = qtyOf(R.shops[shop.id]);
-                    const itemRows = Object.entries(quantities)
-                        .filter(([, v]) => Number(v) > 0)
-                        .map(([k, v]) => [
-                            (items[k] || {}).name || k,
-                            Number(v),
-                        ]);
-                    return {
-                        heading: `${shop.name} · ${shopTotal} pcs`,
-                        columns: ["Item", "Qty"],
-                        rows: [
-                            ...itemRows,
-                            ["Total pcs", shopTotal],
-                        ],
-                    };
-                });
                 async function dl() {
                     const err = await saveFile(
                         `${slug(route.name)}-${date}.csv`,
@@ -1947,11 +2022,31 @@ const { useState, useEffect, useMemo, useRef } = React;
                         [
                             { heading: "Load for the van", columns: totalsRows[0], rows: totalsRows.slice(1) },
                             { heading: "Shop by shop", columns: shopRows[0], rows: shopRows.slice(1) },
-                            ...shopSections,
                             ...(missing.length
                                 ? [{ heading: "Not entered", columns: ["Shop"], rows: missing.map((shop) => [shop.name]) }]
                                 : []),
                         ],
+                    );
+                    if (error) toast(error);
+                }
+                function exportShopByShopPdf() {
+                    const error = printShopByShopDocument(
+                        `${route.name} load sheet`,
+                        `${niceDate(date)}${route.driver ? ` · Driver: ${route.driver}` : ""}`,
+                        done.map((shop) => {
+                            const quantities =
+                                (R.shops[shop.id] && R.shops[shop.id].q) || {};
+                            return {
+                                name: shop.name,
+                                total: qtyOf(R.shops[shop.id]),
+                                items: Object.entries(quantities)
+                                    .filter(([, v]) => Number(v) > 0)
+                                    .map(([k, v]) => ({
+                                        name: (items[k] || {}).name || k,
+                                        qty: Number(v),
+                                    })),
+                            };
+                        }),
                     );
                     if (error) toast(error);
                 }
@@ -2004,7 +2099,7 @@ const { useState, useEffect, useMemo, useRef } = React;
                       )}
               </div>`;
           })}</div>
-      <div class="toolbar"><button class="btn sm" onClick=${exportPdf} disabled=${!done.length}>Print / Save PDF</button></div>
+      <div class="toolbar"><button class="btn sm" onClick=${exportShopByShopPdf} disabled=${!done.length}>Print / Save PDF</button></div>
     </${React.Fragment}>`
             : html`<div class="empty">
                   No orders for ${route.name} on ${niceDate(date)} yet.
