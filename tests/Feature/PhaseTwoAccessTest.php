@@ -20,7 +20,6 @@ class PhaseTwoAccessTest extends TestCase
 
     public function test_first_run_setup_creates_owner_and_then_closes(): void
     {
-        $this->get('/')->assertRedirect(route('setup'));
         $this->get('/setup')->assertOk()->assertSee('Create admin account');
 
         $this->post('/setup', [

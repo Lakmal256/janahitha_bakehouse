@@ -9,11 +9,13 @@ class ExampleTest extends TestCase
 {
     use RefreshDatabase;
 
-    /**
-     * A basic test example.
-     */
-    public function test_first_run_visitors_are_sent_to_setup(): void
+    public function test_home_page_serves_the_bakehouse_app_with_its_server_settings(): void
     {
-        $this->get('/')->assertRedirect(route('setup'));
+        $this->withoutVite();
+
+        $this->get('/')
+            ->assertOk()
+            ->assertSee('<title>Janahitha Bake House</title>', false)
+            ->assertSee('window.BH_CONFIG = JSON.parse(', false);
     }
 }

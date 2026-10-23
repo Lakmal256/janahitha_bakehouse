@@ -17,13 +17,21 @@ use Livewire\Component;
 class Shops extends Component
 {
     public ?int $shopId = null;
+
     public string $shopName = '';
+
     public ?int $routeId = null;
+
     public string $newShopName = '';
+
     public ?int $newShopRouteId = null;
+
     public array $selectedItemIds = [];
+
     public array $itemPrices = [];
+
     public array $itemOrder = [];
+
     public ?int $copyShopId = null;
 
     public function mount(): void
@@ -51,6 +59,7 @@ class Shops extends Component
         $firstShop = $this->visibleShops()->first();
         if (! $firstShop) {
             $this->addError('shopId', 'There are no shops assigned to your accessible routes yet.');
+
             return;
         }
 

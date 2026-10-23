@@ -2,12 +2,15 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasSourceKey;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Model;
 
 class Item extends Model
 {
+    use HasSourceKey;
+
     protected $fillable = ['source_key', 'name', 'default_price', 'sort'];
 
     protected function casts(): array

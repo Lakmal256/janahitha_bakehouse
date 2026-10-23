@@ -18,6 +18,10 @@ class EnsureUserIsActive
             $request->session()->invalidate();
             $request->session()->regenerateToken();
 
+            if ($request->expectsJson()) {
+                return response()->json(['message' => 'This account is blocked. Contact the administrator.'], 401);
+            }
+
             return redirect()->route('login')->withErrors([
                 'username' => 'This account is blocked. Contact the administrator.',
             ]);

@@ -1,0 +1,184 @@
+{
+  "format": "janahitha-bakehouse-backup",
+  "version": 1,
+  "exportedAt": "2026-10-14T08:00:00.000Z",
+  "origin": "http://127.0.0.1:8001",
+  "data": {
+    "config": {
+      "catalog": {
+        "items": [
+          {
+            "id": "fish",
+            "name": "Fish",
+            "price": 50
+          },
+          {
+            "id": "bread",
+            "name": "Bread",
+            "price": 120
+          }
+        ]
+      }
+    },
+    "routes": {
+      "sujith": {
+        "name": "Sujith",
+        "driver": "Sujith",
+        "order": 1
+      },
+      "rmg1abcd": {
+        "name": "Maradana",
+        "driver": "",
+        "order": 2
+      }
+    },
+    "shops": {
+      "sujith-01": {
+        "name": "Jawaththa",
+        "routeId": "sujith",
+        "items": [
+          "fish",
+          "bread"
+        ],
+        "prices": {
+          "fish": 45
+        },
+        "order": 1
+      },
+      "smg1abcd": {
+        "name": "Corner Shop",
+        "routeId": "rmg1abcd",
+        "items": [
+          "bread",
+          "kimbula"
+        ],
+        "order": 1
+      }
+    },
+    "users": {
+      "umg1owner": {
+        "name": "Ashan",
+        "username": "ashan",
+        "salt": "salt-owner",
+        "passHash": "db0001bfa3b84cff55ee74e6b2b0e96ecfe6f0a3507a962485162608c74d8e54",
+        "owner": true,
+        "perms": {
+          "orders": true,
+          "bills_view": true,
+          "bills_generate": true,
+          "bills_returns": true,
+          "bills_payments": true,
+          "bills_prices": true,
+          "reports": true,
+          "shops": true,
+          "routes": true,
+          "items": true,
+          "users": true
+        },
+        "routes": "all",
+        "active": true,
+        "createdAt": 1791900000000
+      },
+      "umg1sales": {
+        "name": "Kasun",
+        "username": "kasun",
+        "salt": "salt-kasun",
+        "passHash": "cbe8267d4edfc9fea169b8bb65ea9f349c10bbee7d5ef37f96a8a20b75624cc0",
+        "owner": false,
+        "perms": {
+          "orders": true,
+          "bills_view": true,
+          "bills_generate": false,
+          "bills_returns": true,
+          "bills_payments": true,
+          "bills_prices": false,
+          "reports": false,
+          "shops": false,
+          "routes": false,
+          "items": false,
+          "users": false
+        },
+        "routes": [
+          "rmg1abcd"
+        ],
+        "active": true,
+        "createdAt": 1791900000000
+      }
+    },
+    "days": {
+      "2026-10-13_sujith": {
+        "date": "2026-10-13",
+        "routeId": "sujith",
+        "shops": {
+          "sujith-01": {
+            "q": {
+              "fish": "10",
+              "bread": "4"
+            },
+            "at": 1791950000000
+          },
+          "ghost-shop": {
+            "q": {
+              "fish": "1"
+            },
+            "at": 1791950000000
+          }
+        }
+      },
+      "2026-10-13_rmg1abcd": {
+        "date": "2026-10-13",
+        "routeId": "rmg1abcd",
+        "shops": {
+          "smg1abcd": {
+            "q": {
+              "kimbula": "6",
+              "bread": ""
+            },
+            "at": 1791950000000
+          }
+        }
+      }
+    },
+    "bills": {
+      "2026-10-13_sujith": {
+        "date": "2026-10-13",
+        "routeId": "sujith",
+        "shops": {
+          "sujith-01": {
+            "lines": [
+              {
+                "id": "fish",
+                "name": "Fish",
+                "qty": 10,
+                "ret": 1,
+                "price": 45
+              },
+              {
+                "id": "bread",
+                "name": "Bread",
+                "qty": 4,
+                "ret": 0,
+                "price": 120
+              }
+            ],
+            "shopName": "Jawaththa",
+            "at": 1791960000000,
+            "pay": {
+              "method": "partial",
+              "paid": 500,
+              "at": 1791970000000,
+              "log": [
+                {
+                  "kind": "partial",
+                  "amount": 500,
+                  "at": 1791970000000
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    "requests": {}
+  }
+}

@@ -2,14 +2,17 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Bill extends Model
 {
-    protected $fillable = ['date', 'route_id', 'shop_id', 'order_id', 'total', 'paid', 'status'];
+    protected $fillable = [
+        'date', 'route_id', 'shop_id', 'order_id', 'shop_name', 'total', 'paid', 'pay_method', 'status',
+        'paid_at', 'generated_at', 'edited_at',
+    ];
 
     protected function casts(): array
     {
@@ -17,6 +20,9 @@ class Bill extends Model
             'date' => 'date',
             'total' => 'decimal:2',
             'paid' => 'decimal:2',
+            'paid_at' => 'datetime',
+            'generated_at' => 'datetime',
+            'edited_at' => 'datetime',
         ];
     }
 

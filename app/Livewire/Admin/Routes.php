@@ -12,7 +12,9 @@ use Livewire\Component;
 class Routes extends Component
 {
     public ?int $editingId = null;
+
     public string $name = '';
+
     public string $driver = '';
 
     public function mount(): void
@@ -58,10 +60,17 @@ class Routes extends Component
     public function delete(int $routeId): void
     {
         Gate::authorize('routes');
-        $route = BakeryRoute::query()->withCount('shops')->findOrFail($routeId);
+        $route = BakeryRoute::query()->withCount(['shops', 'orders', 'bills'])->findOrFail($routeId);
 
         if ($route->shops_count > 0) {
             $this->addError('delete', 'Move or remove this route\'s shops before deleting it.');
+
+            return;
+        }
+
+        if ($route->orders_count > 0 || $route->bills_count > 0) {
+            $this->addError('delete', 'This route has saved orders or bills, so it cannot be deleted.');
+
             return;
         }
 

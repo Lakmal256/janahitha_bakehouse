@@ -2,12 +2,16 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasSourceKey;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Model;
 
 class Route extends Model
 {
+    use HasSourceKey;
+
     protected $fillable = ['source_key', 'name', 'driver', 'sort'];
 
     public function users(): BelongsToMany
@@ -28,5 +32,14 @@ class Route extends Model
     public function bills(): HasMany
     {
         return $this->hasMany(Bill::class);
+    }
+
+    public function scopeVisibleTo(Builder $query, User $user): Builder
+    {
+        if ($user->all_routes) {
+            return $query;
+        }
+
+        return $query->whereIn('id', $user->routes()->select('routes.id'));
     }
 }

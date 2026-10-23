@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Forms;
 
+use App\Models\User;
 use Illuminate\Auth\Events\Lockout;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\RateLimiter;
@@ -29,6 +30,8 @@ class LoginForm extends Form
     public function authenticate(): void
     {
         $this->ensureIsNotRateLimited();
+
+        User::query()->where('username', $this->username)->first()?->upgradeLegacyPassword($this->password);
 
         if (! Auth::attempt([
             'username' => $this->username,

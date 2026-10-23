@@ -12,7 +12,9 @@ use Livewire\Component;
 class Items extends Component
 {
     public string $name = '';
+
     public string $defaultPrice = '';
+
     public array $edits = [];
 
     public function mount(): void
@@ -62,6 +64,7 @@ class Items extends Component
 
         if ($item->shops_count || $item->order_lines_count || $item->bill_lines_count) {
             $this->addError('delete', 'This item is used by a shop, order, or saved bill and cannot be deleted.');
+
             return;
         }
 

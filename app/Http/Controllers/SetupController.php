@@ -2,14 +2,21 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Resources\UserResource;
+use App\Models\Item;
+use App\Models\Route as BakeryRoute;
+use App\Models\Shop;
 use App\Models\User;
+use Database\Seeders\DatabaseSeeder;
 use Illuminate\Contracts\View\View;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules\Password;
+use Illuminate\Validation\ValidationException;
 
 class SetupController extends Controller
 {
@@ -22,7 +29,7 @@ class SetupController extends Controller
         return view('auth.setup');
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(Request $request): RedirectResponse|JsonResponse
     {
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
@@ -33,6 +40,15 @@ class SetupController extends Controller
         $owner = Cache::lock('bakehouse:first-admin-setup', 10)->block(5, function () use ($validated): ?User {
             if (User::query()->exists()) {
                 return null;
+            }
+
+            if (
+                BakeryRoute::query()->doesntExist()
+                && Item::query()->doesntExist()
+                && Shop::query()->doesntExist()
+                && is_file(base_path('data/seed.json'))
+            ) {
+                app(DatabaseSeeder::class)->run();
             }
 
             return User::create([
@@ -47,6 +63,10 @@ class SetupController extends Controller
             ]);
         });
 
+        if (! $owner && $request->expectsJson()) {
+            throw ValidationException::withMessages(['username' => 'Initial setup is already complete. Please sign in.']);
+        }
+
         if (! $owner) {
             return redirect()->route('login')->withErrors([
                 'username' => 'Initial setup is already complete. Please sign in.',
@@ -55,6 +75,10 @@ class SetupController extends Controller
 
         Auth::login($owner);
         $request->session()->regenerate();
+
+        if ($request->expectsJson()) {
+            return (new UserResource($owner))->response()->setStatusCode(201);
+        }
 
         return redirect()->route('dashboard');
     }

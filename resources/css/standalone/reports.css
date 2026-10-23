@@ -1,0 +1,229 @@
+/* reports */
+            .stats {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+                gap: 10px;
+            }
+            .stat {
+                background: var(--surface);
+                border: 1px solid var(--line);
+                border-radius: var(--r-md);
+                padding: 12px 14px;
+            }
+            .stat b {
+                display: block;
+                font-family: var(--f-display);
+                font-size: 26px;
+                line-height: 1.1;
+            }
+            .tablewrap {
+                overflow-x: auto;
+                background: var(--surface);
+                border: 1px solid var(--line);
+                border-radius: var(--r-lg);
+            }
+            table {
+                border-collapse: collapse;
+                width: 100%;
+                font-size: 14px;
+            }
+            th,
+            td {
+                padding: 9px 12px;
+                border-bottom: 1px solid var(--line);
+                text-align: right;
+                white-space: nowrap;
+            }
+            th:first-child,
+            td:first-child {
+                text-align: left;
+                position: sticky;
+                left: 0;
+                background: var(--surface);
+            }
+            thead th {
+                font-size: 12px;
+                letter-spacing: 0.04em;
+                text-transform: uppercase;
+                color: var(--muted);
+                font-weight: 600;
+                background: var(--sunk);
+            }
+            thead th:first-child {
+                background: var(--sunk);
+            }
+            tfoot td {
+                font-weight: 700;
+                border-bottom: 0;
+                background: var(--sunk);
+            }
+            tfoot td:first-child {
+                background: var(--sunk);
+            }
+            td.zero {
+                color: var(--line);
+            }
+            td.grand {
+                font-weight: 700;
+                color: var(--accent);
+            }
+            .cards {
+                display: grid;
+                grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+                gap: 10px;
+            }
+            .card {
+                background: var(--surface);
+                border: 1px solid var(--line);
+                border-radius: var(--r-md);
+                padding: 12px 14px;
+                display: flex;
+                flex-direction: column;
+                gap: 6px;
+                min-width: 0;
+            }
+            .card h3 {
+                font-size: 16px;
+                display: flex;
+                justify-content: space-between;
+                gap: 8px;
+            }
+            .kv {
+                display: flex;
+                justify-content: space-between;
+                gap: 8px;
+                font-size: 14px;
+            }
+            .kv span:last-child {
+                font-weight: 600;
+            }
+            .missing {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 6px;
+            }
+            .missing span {
+                background: var(--warn-soft);
+                color: var(--warn);
+                border-radius: 99px;
+                padding: 3px 10px;
+                font-size: 13px;
+                font-weight: 600;
+            }
+            .bill {
+                background: var(--surface);
+                border: 1px solid var(--line);
+                border-radius: var(--r-lg);
+                padding: 18px;
+                max-width: 520px;
+                display: flex;
+                flex-direction: column;
+                gap: 12px;
+            }
+            .bill-h {
+                display: flex;
+                justify-content: space-between;
+                gap: 12px;
+                border-bottom: 2px solid var(--ink);
+                padding-bottom: 10px;
+            }
+            .bill-h h3 {
+                font-size: 22px;
+            }
+            .bill table th,
+            .bill table td {
+                padding: 7px 4px;
+            }
+            .bill table th:first-child,
+            .bill table td:first-child {
+                background: transparent;
+            }
+            .bill thead th {
+                background: transparent;
+            }
+            .bill tfoot td {
+                background: transparent;
+                font-size: 15px;
+                border-top: 2px solid var(--ink);
+            }
+            .cards.bills {
+                grid-template-columns: repeat(
+                    auto-fill,
+                    minmax(min(100%, 420px), 1fr)
+                );
+                gap: 12px;
+            }
+            .cards.bills .bill {
+                max-width: none;
+                padding: 14px;
+            }
+            .cards.bills .bill-h h3 {
+                font-size: 19px;
+            }
+            .bill table {
+                font-size: 14px;
+            }
+            input.mini.wide {
+                width: 100px;
+            }
+            .pill.pay-paid {
+                background: var(--accent-soft);
+                color: var(--accent);
+            }
+            .pill.pay-partial {
+                background: var(--warn-soft);
+                color: var(--warn);
+            }
+            .pill.pay-credit,
+            .pill.pay-due {
+                background: var(--danger-soft);
+                color: var(--danger);
+            }
+            .paybox {
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+                background: var(--sunk);
+                border-radius: var(--r-sm);
+                padding: 10px;
+            }
+            .payline {
+                display: flex;
+                justify-content: space-between;
+                gap: 8px;
+                flex-wrap: wrap;
+                font-size: 14px;
+            }
+            .seg {
+                display: flex;
+                gap: 6px;
+                flex-wrap: wrap;
+            }
+            .seg .btn[aria-pressed="true"] {
+                background: var(--ink);
+                color: var(--bg);
+                border-color: var(--ink);
+            }
+            input.mini {
+                width: 58px;
+                border: 1px solid var(--accent);
+                background: var(--sunk);
+                border-radius: 6px;
+                padding: 5px 6px;
+                text-align: right;
+                font-weight: 600;
+            }
+            .toolbar {
+                display: flex;
+                gap: 8px;
+                flex-wrap: wrap;
+                align-items: center;
+            }
+            select.sel {
+                border: 1px solid var(--line);
+                background: var(--surface);
+                border-radius: var(--r-sm);
+                padding: 8px 10px;
+                min-height: 40px;
+                max-width: 100%;
+            }

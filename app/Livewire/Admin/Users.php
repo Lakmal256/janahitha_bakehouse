@@ -15,12 +15,19 @@ use Livewire\Component;
 class Users extends Component
 {
     public string $name = '';
+
     public string $username = '';
+
     public string $password = '';
+
     public string $password_confirmation = '';
+
     public string $role = 'viewer';
+
     public bool $allRoutes = true;
+
     public array $selectedRoutes = [];
+
     public array $perms = [];
 
     public function mount(): void

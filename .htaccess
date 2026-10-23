@@ -1,0 +1,14 @@
+<IfModule mod_negotiation.c>
+    Options -MultiViews -Indexes
+</IfModule>
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Block direct web access to sensitive application files and directories
+    RewriteRule ^(\.env.*|\.git.*|composer\.(json|lock)|package(-lock)?\.json|phpunit\.xml|vite\.config\.js|tailwind\.config\.js|postcss\.config\.js|artisan|README\.md|CLAUDE\.md|AGENTS\.md|database/|storage/|app/|bootstrap/|config/|routes/|tests/|data/|resources/|vendor/|node_modules/) - [F,L]
+
+    # Route all requests to the Laravel public/ directory when Document Root is not set to /public
+    RewriteCond %{REQUEST_URI} !^/public/
+    RewriteRule ^(.*)$ public/$1 [L,QSA]
+</IfModule>
