@@ -1,27 +1,42 @@
-*.log
-.DS_Store
-.env
-.env.backup
-.env.production
-.phpactor.json
-.phpunit.result.cache
-/.codex
-/.cursor/
-/.idea
-/.nova
-/.phpunit.cache
-/.vscode
-/.zed
-/auth.json
+# Dependencies & Build
 /node_modules
+/vendor
 /public/build
-/public/fonts-manifest.dev.json
 /public/hot
 /public/storage
+/public/fonts-manifest.dev.json
+
+# Environment files (Ignore real secrets, keep examples!)
+.env
+.env.*
+!.env.example
+!.env.production.example
+
+# Laravel & PHP Caches/Keys
 /storage/*.key
 /storage/pail
-/vendor
+.phpunit.result.cache
+/.phpunit.cache
+/auth.json
 _ide_helper.php
+_ide_helper_models.php
+.phpactor.json
 Homestead.json
 Homestead.yaml
+
+# Logs & OS Files
+*.log
+.DS_Store
 Thumbs.db
+
+# IDEs & Editors
+/.idea
+/.vscode
+/.cursor/
+/.zed
+/.nova
+/.codex
+
+# AI & Local Tooling
+/.claude
+.mcp.json

@@ -494,79 +494,17 @@ const { useState, useEffect, useMemo, useRef } = React;
                         "'": "&#39;",
                     })[character],
                 );
-            function downloadPdf(filename, title, subtitle, sections) {
-                const JsPDF = window.jspdf && window.jspdf.jsPDF;
-                if (!JsPDF || !JsPDF.API.autoTable)
-                    return "PDF export is unavailable. Check your connection and try again.";
-                try {
-                    const landscape = sections.some(
-                        (section) => section.columns.length > 6,
-                    );
-                    const pdf = new JsPDF({
-                        orientation: landscape ? "landscape" : "portrait",
-                        unit: "pt",
-                        format: "a4",
-                    });
-                    const pageWidth = pdf.internal.pageSize.getWidth();
-                    const pageHeight = pdf.internal.pageSize.getHeight();
-                    pdf.setFont("helvetica", "bold");
-                    pdf.setFontSize(20);
-                    pdf.text("Janahitha Bake House", 40, 42);
-                    pdf.setFontSize(16);
-                    pdf.text(String(title), 40, 66);
-                    pdf.setFont("helvetica", "normal");
-                    pdf.setFontSize(10);
-                    pdf.text(String(subtitle), 40, 82);
-                    let y = 108;
-                    sections.forEach(({ heading, columns, rows }) => {
-                        if (y > pageHeight - 80) {
-                            pdf.addPage();
-                            y = 42;
-                        }
-                        pdf.setFont("helvetica", "bold");
-                        pdf.setFontSize(12);
-                        pdf.text(String(heading), 40, y);
-                        pdf.autoTable({
-                            head: [columns.map(String)],
-                            body: rows.map((row) => row.map((cell) => String(cell ?? ""))),
-                            startY: y + 8,
-                            margin: { left: 40, right: 40, bottom: 32 },
-                            styles: {
-                                font: "helvetica",
-                                fontSize: 8,
-                                cellPadding: 4,
-                                overflow: "linebreak",
-                            },
-                            headStyles: {
-                                fillColor: [66, 111, 72],
-                                textColor: [255, 255, 255],
-                            },
-                            didDrawPage: () => {
-                                pdf.setFont("helvetica", "normal");
-                                pdf.setFontSize(8);
-                                pdf.text(
-                                    `Page ${pdf.internal.getNumberOfPages()}`,
-                                    pageWidth - 40,
-                                    pageHeight - 16,
-                                    { align: "right" },
-                                );
-                            },
-                        });
-                        y = pdf.lastAutoTable.finalY + 24;
-                    });
-                    pdf.save(filename);
-                    return null;
-                } catch {
-                    return "Could not create the PDF.";
-                }
-            }
             function printDocument(title, subtitle, sections) {
                 const frame = document.createElement("iframe");
                 frame.title = `Print ${title}`;
                 frame.style.cssText = "position:fixed;right:0;bottom:0;width:0;height:0;border:0";
                 document.body.appendChild(frame);
                 const popup = frame.contentWindow;
-                const doc = frame.contentDocument;
+                const doc = frame.contentDocument || (popup && popup.document);
+                if (!popup || !doc) {
+                    frame.remove();
+                    return "Could not open the print dialog.";
+                }
                 const content = sections
                     .map(
                         ({ heading, columns, rows }) =>
@@ -574,7 +512,7 @@ const { useState, useEffect, useMemo, useRef } = React;
                     )
                     .join("");
                 doc.open();
-                doc.write(`<!doctype html><html><head><meta charset="utf-8"><title>${printEscape(title)}</title><style>body{font:14px/1.45 Arial,sans-serif;color:#24372b;margin:32px}h1{font-size:24px;margin:0 0 4px}h2{font-size:17px;margin:24px 0 8px}p{color:#526252;margin:0 0 18px}table{width:100%;border-collapse:collapse;font-size:12px}th,td{padding:7px 8px;border:1px solid #cbd5c7;text-align:left;vertical-align:top}th{background:#edf2e8}tr{break-inside:avoid}section{break-inside:auto}@page{margin:14mm}@media print{body{margin:0}}</style></head><body><header><h1>${printEscape(title)}</h1><p>${printEscape(subtitle)}</p></header>${content}</body></html>`);
+                doc.write(`<!doctype html><html><head><meta charset="utf-8"><title>${printEscape(title)}</title><style>body{font:14px/1.45 Arial,sans-serif;color:#24372b;margin:32px}h1{font-size:24px;margin:0 0 4px}h2{font-size:17px;margin:24px 0 8px;break-after:avoid;page-break-after:avoid}p{color:#526252;margin:0 0 18px}table{width:100%;border-collapse:collapse;font-size:12px}thead{display:table-header-group}th,td{padding:7px 8px;border:1px solid #cbd5c7;text-align:left;vertical-align:top}th{background:#edf2e8}tr{break-inside:avoid;page-break-inside:avoid}section{break-inside:auto}@page{margin:14mm}@media print{body{margin:0}}</style></head><body><header><h1>${printEscape(title)}</h1><p>${printEscape(subtitle)}</p></header>${content}</body></html>`);
                 doc.close();
                 popup.addEventListener("afterprint", () => frame.remove(), {
                     once: true,
@@ -584,6 +522,9 @@ const { useState, useEffect, useMemo, useRef } = React;
                     popup.print();
                 }, 300);
                 return null;
+            }
+            function downloadPdf(filename, title, subtitle, sections) {
+                return printDocument(title, subtitle, sections);
             }
             async function copyText(t) {
                 try {
@@ -1465,8 +1406,7 @@ const { useState, useEffect, useMemo, useRef } = React;
                     if (error) toast(error);
                 }
                 function exportRangePdf() {
-                    const error = downloadPdf(
-                        `reports-${label}.pdf`,
+                    const error = printDocument(
                         "Income, credit and returns",
                         rangeSubtitle,
                         [
@@ -1885,8 +1825,7 @@ const { useState, useEffect, useMemo, useRef } = React;
                     if (error) toast(error);
                 }
                 function exportPdf() {
-                    const error = downloadPdf(
-                        `all-routes-${date}.pdf`,
+                    const error = printDocument(
                         "All items, all routes",
                         niceDate(date),
                         [{
@@ -1936,7 +1875,13 @@ const { useState, useEffect, useMemo, useRef } = React;
                 const R = byRoute[route.id] || { items: {}, shops: {} };
                 const rShops = shops.filter((s) => s.routeId === route.id);
                 const missing = rShops.filter((s) => !R.shops[s.id]);
-                const used = itemList.filter((it) => R.items[it.id] > 0);
+                const used = itemList
+                    .filter((it) => R.items[it.id] > 0)
+                    .concat(
+                        Object.keys(R.items)
+                            .filter((k) => R.items[k] > 0 && !items[k])
+                            .map((k) => ({ id: k, name: k, price: 0 })),
+                    );
                 const done = rShops.filter((s) => R.shops[s.id]);
                 const totalsRows = [
                     ["Item", "Qty"],
@@ -1959,6 +1904,24 @@ const { useState, useEffect, useMemo, useRef } = React;
                         sum(Object.values(R.items)),
                     ],
                 ];
+                const shopSections = done.map((shop) => {
+                    const quantities = (R.shops[shop.id] && R.shops[shop.id].q) || {};
+                    const shopTotal = qtyOf(R.shops[shop.id]);
+                    const itemRows = Object.entries(quantities)
+                        .filter(([, v]) => Number(v) > 0)
+                        .map(([k, v]) => [
+                            (items[k] || {}).name || k,
+                            Number(v),
+                        ]);
+                    return {
+                        heading: `${shop.name} · ${shopTotal} pcs`,
+                        columns: ["Item", "Qty"],
+                        rows: [
+                            ...itemRows,
+                            ["Total pcs", shopTotal],
+                        ],
+                    };
+                });
                 async function dl() {
                     const err = await saveFile(
                         `${slug(route.name)}-${date}.csv`,
@@ -1978,13 +1941,13 @@ const { useState, useEffect, useMemo, useRef } = React;
                     if (error) toast(error);
                 }
                 function exportPdf() {
-                    const error = downloadPdf(
-                        `${slug(route.name)}-${date}.pdf`,
+                    const error = printDocument(
                         `${route.name} load sheet`,
                         `${niceDate(date)}${route.driver ? ` · Driver: ${route.driver}` : ""}`,
                         [
                             { heading: "Load for the van", columns: totalsRows[0], rows: totalsRows.slice(1) },
                             { heading: "Shop by shop", columns: shopRows[0], rows: shopRows.slice(1) },
+                            ...shopSections,
                             ...(missing.length
                                 ? [{ heading: "Not entered", columns: ["Shop"], rows: missing.map((shop) => [shop.name]) }]
                                 : []),
@@ -2021,9 +1984,7 @@ const { useState, useEffect, useMemo, useRef } = React;
         )}</tbody>
         <tfoot><tr><td>Total pcs</td><td>${sum(Object.values(R.items))}</td></tr></tfoot></table></div>
       <div class="label">Shop by shop</div>
-      <div class="cards">${rShops
-          .filter((s) => R.shops[s.id])
-          .map((s) => {
+      <div class="cards">${done.map((s) => {
               const q = R.shops[s.id].q || {};
               return html`<div class="card" key=${s.id}>
                   <h3>
@@ -2043,6 +2004,7 @@ const { useState, useEffect, useMemo, useRef } = React;
                       )}
               </div>`;
           })}</div>
+      <div class="toolbar"><button class="btn sm" onClick=${exportPdf} disabled=${!done.length}>Print / Save PDF</button></div>
     </${React.Fragment}>`
             : html`<div class="empty">
                   No orders for ${route.name} on ${niceDate(date)} yet.
@@ -2324,8 +2286,7 @@ const { useState, useEffect, useMemo, useRef } = React;
                             });
                         }),
                     );
-                    const error = downloadPdf(
-                        `${billsFilename}.pdf`,
+                    const error = printDocument(
                         "Bills",
                         `${niceDate(date)} · ${sel === "all" ? "All routes" : (routes.find((r) => r.id === sel) || {}).name || "Selected route"}`,
                         sections,
@@ -2339,8 +2300,7 @@ const { useState, useEffect, useMemo, useRef } = React;
                         sid;
                     const printableBill = { ...bill, lines };
                     const info = payInfo(printableBill);
-                    const error = downloadPdf(
-                        `bill-${slug(name)}-${date}.pdf`,
+                    const error = printDocument(
                         `Bill · ${name}`,
                         `${niceDate(date)} · ${route.name}`,
                         [
