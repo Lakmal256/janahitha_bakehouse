@@ -91,7 +91,7 @@ Route::prefix('api')->name('api.')->group(function (): void {
 });
 
 Route::post('/deploy/finalize', function (Request $request) {
-    $secret = env('DEPLOY_SECRET');
+    $secret = config('app.deploy_secret');
     if (empty($secret) || $request->header('X-Deploy-Token') !== $secret) {
         abort(403, 'Unauthorized');
     }
