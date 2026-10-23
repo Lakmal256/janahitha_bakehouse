@@ -18,9 +18,14 @@ return Application::configure(basePath: dirname(__DIR__))
             'active' => EnsureUserIsActive::class,
             'route.access' => EnsureUserCanAccessRoute::class,
         ]);
+
+        $middleware->validateCsrfTokens(except: [
+            'deploy/finalize',
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(
             fn (Request $request) => $request->is('api/*') || $request->expectsJson(),
         );
     })->create();
+    

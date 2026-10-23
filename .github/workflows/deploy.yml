@@ -1,0 +1,69 @@
+name: Deploy to cPanel via API Token
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    name: Build & Deploy to cPanel
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 1. Checkout Code
+        uses: actions/checkout@v4
+
+      - name: 2. Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: mbstring, xml, ctype, iconv, intl, pdo_mysql, dom, filter, gd, json, zip
+          coverage: none
+
+      - name: 3. Install Composer Dependencies
+        run: composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist
+
+      - name: 4. Setup Node.js & Build Vite Assets
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: 5. Build Frontend Assets
+        run: |
+          npm ci
+          npm run build
+
+      - name: 6. Create Clean Release Archive (Excluding Live Data & Secrets)
+        run: |
+          zip -r release.zip . \
+            -x ".git/*" \
+            -x ".github/*" \
+            -x ".claude/*" \
+            -x ".vscode/*" \
+            -x "node_modules/*" \
+            -x "storage/*" \
+            -x "data/*" \
+            -x "tests/*" \
+            -x ".env" \
+            -x ".env.*" \
+            -x ".mcp.json" \
+            -x ".npmrc" \
+            -x "AGENTS.md" \
+            -x "CLAUDE.md"
+
+      - name: 7. Upload release.zip to cPanel via UAPI
+        run: |
+          curl --fail --silent --show-error \
+            -H "Authorization: cpanel ${{ secrets.CPANEL_USER }}:${{ secrets.CPANEL_TOKEN }}" \
+            -F "dir=/home/${{ secrets.CPANEL_USER }}/bakehouse.janahitha.lk" \
+            -F "overwrite=1" \
+            -F "file-1=@release.zip" \
+            "https://${{ secrets.CPANEL_HOST }}:2083/execute/Fileman/upload_files"
+
+      - name: 8. Unpack Archive & Refresh Laravel Caches
+        run: |
+          curl --fail --silent --show-error -X POST \
+            -H "X-Deploy-Token: ${{ secrets.DEPLOY_SECRET }}" \
+            "https://bakehouse.janahitha.lk/deploy/finalize"

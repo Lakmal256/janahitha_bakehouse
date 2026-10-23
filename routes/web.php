@@ -16,6 +16,7 @@ use App\Livewire\Admin\Users as UserManagement;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Artisan;
 
 Route::view('/', 'bakehouse')->name('home');
 
@@ -86,4 +87,36 @@ Route::prefix('api')->name('api.')->group(function (): void {
 
         Route::post('imports', [ImportController::class, 'store'])->name('imports.store');
     });
+});
+
+Route::post('/deploy/finalize', function (Request $request) {
+    $secret = env('DEPLOY_SECRET');
+    if (empty($secret) || $request->header('X-Deploy-Token') !== $secret) {
+        abort(403, 'Unauthorized');
+    }
+
+    $zipPath = base_path('release.zip');
+    if (!file_exists($zipPath)) {
+        return response()->json(['error' => 'release.zip not found'], 404);
+    }
+
+    $zip = new \ZipArchive();
+    if ($zip->open($zipPath) === TRUE) {
+        // Extracts and updates changed files while leaving .env, storage/, and data/ untouched
+        $zip->extractTo(base_path());
+        $zip->close();
+        @unlink($zipPath);
+    } else {
+        return response()->json(['error' => 'Failed to open release.zip'], 500);
+    }
+
+    Artisan::call('optimize:clear');
+    Artisan::call('config:cache');
+    Artisan::call('route:cache');
+    Artisan::call('view:cache');
+
+    return response()->json([
+        'status' => 'success',
+        'message' => 'Release extracted and Laravel caches refreshed!'
+    ]);
 });
