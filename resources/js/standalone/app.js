@@ -616,6 +616,47 @@ const { useState, useEffect, useMemo, useRef } = React;
                 }, 300);
                 return null;
             }
+            function printBillsDocument(title, subtitle, billPages) {
+                const frame = document.createElement("iframe");
+                frame.title = `Print ${title}`;
+                frame.style.cssText = "position:fixed;right:0;bottom:0;width:0;height:0;border:0";
+                document.body.appendChild(frame);
+                const popup = frame.contentWindow;
+                const doc = frame.contentDocument || (popup && popup.document);
+                if (!popup || !doc) {
+                    frame.remove();
+                    return "Could not open the print dialog.";
+                }
+                const content = billPages
+                    .map((page, pageIdx) => {
+                        const itemCount = Number(page.itemCount) || 0;
+                        const density =
+                            itemCount > 26
+                                ? "bill-dense"
+                                : itemCount > 16
+                                  ? "bill-compact"
+                                  : "bill-normal";
+                        const sectionsHtml = (page.sections || [])
+                            .map(
+                                ({ heading, columns, rows }) =>
+                                    `<div class="bill-section"><h2>${printEscape(heading)}</h2><table><thead><tr>${columns.map((column) => `<th>${printEscape(column)}</th>`).join("")}</tr></thead><tbody>${rows.map((row) => `<tr>${row.map((cell) => `<td>${printEscape(cell)}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`,
+                            )
+                            .join("");
+                        return `<section class="bill-page ${density}"><header><h1>${printEscape(page.title || title)}</h1><p>${printEscape(page.subtitle || subtitle)}</p></header><div class="bill-body">${sectionsHtml}</div><footer class="bill-footer"><span>Janahitha Bake House</span><span>Page ${pageIdx + 1} of ${billPages.length}</span></footer></section>`;
+                    })
+                    .join("");
+                doc.open();
+                doc.write(`<!doctype html><html><head><meta charset="utf-8"><title>${printEscape(title)}</title><style>*{box-sizing:border-box}body{font:16px/1.4 Arial,sans-serif;color:#24372b;margin:24px;-webkit-print-color-adjust:exact;print-color-adjust:exact}h1{font-size:24px;margin:0 0 3px}h2{font-size:16px;margin:14px 0 6px;break-after:avoid;page-break-after:avoid}p{color:#526252;margin:0 0 12px;font-size:14px}.bill-page{break-inside:avoid;page-break-inside:avoid;max-height:273mm;overflow:hidden;display:flex;flex-direction:column}.bill-page+.bill-page{break-before:page;page-break-before:always;margin-top:28px}.bill-section{break-inside:avoid;page-break-inside:avoid}table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:6px 8px;border:1px solid #cbd5c7;text-align:left;vertical-align:top}th{background:#edf2e8}tr{break-inside:avoid;page-break-inside:avoid}.bill-compact h1{font-size:20px}.bill-compact p{margin-bottom:8px;font-size:14px}.bill-compact h2{font-size:16px;margin:9px 0 4px}.bill-compact table{font-size:12px}.bill-compact th,.bill-compact td{padding:3.5px 6px}.bill-dense h1{font-size:18px}.bill-dense p{margin-bottom:6px;font-size:12px}.bill-dense h2{font-size:14px;margin:6px 0 3px}.bill-dense table{font-size:11px}.bill-dense th,.bill-dense td{padding:2px 4px}.bill-footer{display:flex;justify-content:space-between;align-items:center;margin-top:12px;font-size:12px;color:#526252}@page{size:A4 portrait;margin:10mm}@media print{body{margin:0}.bill-page+.bill-page{margin-top:0}}</style></head><body>${content}</body></html>`);
+                doc.close();
+                popup.addEventListener("afterprint", () => frame.remove(), {
+                    once: true,
+                });
+                setTimeout(() => {
+                    popup.focus();
+                    popup.print();
+                }, 300);
+                return null;
+            }
             function downloadPdf(filename, title, subtitle, sections) {
                 return printDocument(title, subtitle, sections);
             }
@@ -2345,7 +2386,8 @@ const { useState, useEffect, useMemo, useRef } = React;
                     if (error) toast(error);
                 }
                 function exportBillsPdf() {
-                    const sections = [];
+                    const billPages = [];
+                    const subtitle = `${niceDate(date)} · ${sel === "all" ? "All routes" : (routes.find((r) => r.id === sel) || {}).name || "Selected route"}`;
                     data.forEach(({ route, rows }) =>
                         rows.forEach((entry) => {
                             if (!entry.bill) return;
@@ -2359,32 +2401,37 @@ const { useState, useEffect, useMemo, useRef } = React;
                                     (line) => Number(line.ret) || 0,
                                 ),
                             );
-                            sections.push({
-                                heading: `${name} · ${route.name}`,
-                                columns: ["Item", "Qty", "Returned", "Net", "Unit price", "Amount"],
-                                rows: [
-                                    ...entry.bill.lines.map((line) => [
-                                        line.name,
-                                        line.qty,
-                                        line.ret || 0,
-                                        lineNet(line),
-                                        rs(line.price),
-                                        rs(lineNet(line) * line.price),
-                                    ]),
-                                    ["Total", sum(entry.bill.lines.map((line) => Number(line.qty) || 0)), returned, "", "", rs(info.total)],
+                            billPages.push({
+                                itemCount: entry.bill.lines.length,
+                                sections: [
+                                    {
+                                        heading: `${name} · ${route.name}`,
+                                        columns: ["Item", "Qty", "Returned", "Net", "Unit price", "Amount"],
+                                        rows: [
+                                            ...entry.bill.lines.map((line) => [
+                                                line.name,
+                                                line.qty,
+                                                line.ret || 0,
+                                                lineNet(line),
+                                                rs(line.price),
+                                                rs(lineNet(line) * line.price),
+                                            ]),
+                                            ["Total", sum(entry.bill.lines.map((line) => Number(line.qty) || 0)), returned, "", "", rs(info.total)],
+                                        ],
+                                    },
+                                    {
+                                        heading: `Payment · ${name}`,
+                                        columns: ["Paid", "Balance", "Status"],
+                                        rows: [[rs(info.paid), rs(info.balance), PAY_LABEL[info.status]]],
+                                    },
                                 ],
-                            });
-                            sections.push({
-                                heading: `Payment · ${name}`,
-                                columns: ["Paid", "Balance", "Status"],
-                                rows: [[rs(info.paid), rs(info.balance), PAY_LABEL[info.status]]],
                             });
                         }),
                     );
-                    const error = printDocument(
+                    const error = printBillsDocument(
                         "Bills",
-                        `${niceDate(date)} · ${sel === "all" ? "All routes" : (routes.find((r) => r.id === sel) || {}).name || "Selected route"}`,
-                        sections,
+                        subtitle,
+                        billPages,
                     );
                     if (error) toast(error);
                 }
@@ -2395,29 +2442,34 @@ const { useState, useEffect, useMemo, useRef } = React;
                         sid;
                     const printableBill = { ...bill, lines };
                     const info = payInfo(printableBill);
-                    const error = printDocument(
+                    const error = printBillsDocument(
                         `Bill · ${name}`,
                         `${niceDate(date)} · ${route.name}`,
                         [
                             {
-                                heading: "Items",
-                                columns: ["Item", "Qty", "Returned", "Net", "Unit price", "Amount"],
-                                rows: [
-                                    ...lines.map((line) => [
-                                        line.name,
-                                        line.qty,
-                                        line.ret || 0,
-                                        lineNet(line),
-                                        rs(line.price),
-                                        rs(lineNet(line) * line.price),
-                                    ]),
-                                    ["Total", sum(lines.map((line) => Number(line.qty) || 0)), sum(lines.map((line) => Number(line.ret) || 0)), "", "", rs(info.total)],
+                                itemCount: lines.length,
+                                sections: [
+                                    {
+                                        heading: "Items",
+                                        columns: ["Item", "Qty", "Returned", "Net", "Unit price", "Amount"],
+                                        rows: [
+                                            ...lines.map((line) => [
+                                                line.name,
+                                                line.qty,
+                                                line.ret || 0,
+                                                lineNet(line),
+                                                rs(line.price),
+                                                rs(lineNet(line) * line.price),
+                                            ]),
+                                            ["Total", sum(lines.map((line) => Number(line.qty) || 0)), sum(lines.map((line) => Number(line.ret) || 0)), "", "", rs(info.total)],
+                                        ],
+                                    },
+                                    {
+                                        heading: "Payment",
+                                        columns: ["Total", "Paid", "Balance", "Status"],
+                                        rows: [[rs(info.total), rs(info.paid), rs(info.balance), PAY_LABEL[info.status]]],
+                                    },
                                 ],
-                            },
-                            {
-                                heading: "Payment",
-                                columns: ["Total", "Paid", "Balance", "Status"],
-                                rows: [[rs(info.total), rs(info.paid), rs(info.balance), PAY_LABEL[info.status]]],
                             },
                         ],
                     );
