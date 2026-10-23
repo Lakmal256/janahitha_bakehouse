@@ -17,6 +17,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Log;
 
 Route::view('/', 'bakehouse')->name('home');
 
@@ -97,26 +98,30 @@ Route::post('/deploy/finalize', function (Request $request) {
 
     $zipPath = base_path('release.zip');
     if (!file_exists($zipPath)) {
-        return response()->json(['error' => 'release.zip not found'], 404);
+        return response()->json(['error' => 'release.zip not found at ' . $zipPath], 404);
     }
 
-    $zip = new \ZipArchive();
-    if ($zip->open($zipPath) === TRUE) {
-        // Extracts and updates changed files while leaving .env, storage/, and data/ untouched
-        $zip->extractTo(base_path());
-        $zip->close();
-        @unlink($zipPath);
-    } else {
-        return response()->json(['error' => 'Failed to open release.zip'], 500);
+    try {
+        $zip = new \ZipArchive();
+        if ($zip->open($zipPath) === TRUE) {
+            $zip->extractTo(base_path());
+            $zip->close();
+            @unlink($zipPath);
+        } else {
+            return response()->json(['error' => 'Failed to open release.zip archive'], 500);
+        }
+
+        Artisan::call('optimize:clear');
+        Artisan::call('config:cache');
+        Artisan::call('route:cache');
+        Artisan::call('view:cache');
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Release extracted and Laravel caches refreshed!'
+        ]);
+    } catch (\Exception $e) {
+        Log::error('Deployment failed: ' . $e->getMessage());
+        return response()->json(['error' => $e->getMessage()], 500);
     }
-
-    Artisan::call('optimize:clear');
-    Artisan::call('config:cache');
-    Artisan::call('route:cache');
-    Artisan::call('view:cache');
-
-    return response()->json([
-        'status' => 'success',
-        'message' => 'Release extracted and Laravel caches refreshed!'
-    ]);
 });
