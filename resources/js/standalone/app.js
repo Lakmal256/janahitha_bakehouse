@@ -338,6 +338,12 @@ const { useState, useEffect, useMemo, useRef } = React;
                     const [col, url] = docUrl(path);
                     const res = await request(method, url, data);
                     await refreshCol(col === "items" ? "config" : col);
+                    if (col === "employees") {
+                        await Promise.all([
+                            refreshCol("salary-advances"),
+                            refreshCol("employee-leaves"),
+                        ]);
+                    }
                     return res;
                 }
                 return {
@@ -5184,6 +5190,1799 @@ const { useState, useEffect, useMemo, useRef } = React;
                 </div>`;
             }
 
+            /*  EMPLOYEES (admin only)  */
+            const LEAVE_TYPES = ["Casual", "Sick", "Annual", "Unpaid", "Other"];
+            const EMP_STATUS_LABEL = {
+                pending: "Pending",
+                approved: "Approved",
+                rejected: "Rejected",
+            };
+            const EmpStatusPill = ({ status }) => {
+                const cls =
+                    status === "approved"
+                        ? "done"
+                        : status === "rejected"
+                          ? "pay-credit"
+                          : "pay-partial";
+                return html`<span class=${"pill " + cls}
+                    >${EMP_STATUS_LABEL[status] || status}</span
+                >`;
+            };
+            const niceMonth = (ym) => {
+                try {
+                    const [y, m] = String(ym || "").split("-");
+                    if (!y || !m) return ym;
+                    return new Date(Number(y), Number(m) - 1, 1).toLocaleDateString(
+                        "en-GB",
+                        { month: "long", year: "numeric" },
+                    );
+                } catch {
+                    return ym;
+                }
+            };
+
+            function EmployeesView({ toast }) {
+                const [section, setSection] = useState(
+                    ls.get("bh-emp-view", "profiles"),
+                );
+                const [employees, setEmployees] = useState([]);
+                const [advances, setAdvances] = useState([]);
+                const [leaves, setLeaves] = useState([]);
+                const [loading, setLoading] = useState(true);
+
+                useEffect(() => ls.set("bh-emp-view", section), [section]);
+
+                useEffect(() => {
+                    let loadedCount = 0;
+                    const markLoaded = () => {
+                        loadedCount += 1;
+                        if (loadedCount >= 3) setLoading(false);
+                    };
+                    const u1 = Store.watch(
+                        "employees",
+                        (rows) => {
+                            setEmployees(
+                                [...rows].sort((a, b) =>
+                                    String(a.name || "").localeCompare(
+                                        String(b.name || ""),
+                                    ),
+                                ),
+                            );
+                            markLoaded();
+                        },
+                        null,
+                        markLoaded,
+                    );
+                    const u2 = Store.watch(
+                        "salary-advances",
+                        (rows) => {
+                            setAdvances(rows);
+                            markLoaded();
+                        },
+                        null,
+                        markLoaded,
+                    );
+                    const u3 = Store.watch(
+                        "employee-leaves",
+                        (rows) => {
+                            setLeaves(rows);
+                            markLoaded();
+                        },
+                        null,
+                        markLoaded,
+                    );
+                    return () => {
+                        u1();
+                        u2();
+                        u3();
+                    };
+                }, []);
+
+                const tabs = [
+                    ["profiles", `Employees (${employees.length})`],
+                    ["advances", "Salary advances"],
+                    ["leaves", "Leave management"],
+                ];
+                const cur = tabs.find(([k]) => k === section)
+                    ? section
+                    : "profiles";
+
+                return html`<${React.Fragment}>
+                    <div class="chips" role="group" aria-label="Employee section">
+                        ${tabs.map(
+                            ([k, l]) =>
+                                html`<button
+                                    key=${k}
+                                    class="chip"
+                                    aria-pressed=${cur === k}
+                                    onClick=${() => setSection(k)}
+                                >
+                                    ${l}
+                                </button>`,
+                        )}
+                    </div>
+                    ${loading && !employees.length
+                        ? html`<div class="empty">Loading employee records…</div>`
+                        : cur === "profiles"
+                          ? html`<${EmployeeProfilesSection}
+                                employees=${employees}
+                                toast=${toast}
+                            />`
+                          : cur === "advances"
+                            ? html`<${SalaryAdvancesSection}
+                                  employees=${employees}
+                                  advances=${advances}
+                                  toast=${toast}
+                              />`
+                            : html`<${EmployeeLeavesSection}
+                                  employees=${employees}
+                                  leaves=${leaves}
+                                  toast=${toast}
+                              />`}
+                </${React.Fragment}>`;
+            }
+
+            function EmployeeProfilesSection({ employees, toast }) {
+                const [name, setName] = useState("");
+                const [phone, setPhone] = useState("");
+                const [location, setLocation] = useState("");
+                const [search, setSearch] = useState("");
+                const [edit, setEdit] = useState(null);
+                const [del, setDel] = useState(null);
+                const [busy, setBusy] = useState(false);
+
+                async function addEmployee(e) {
+                    e.preventDefault();
+                    if (!name.trim() || !phone.trim() || !location.trim()) {
+                        toast("Enter employee name, phone number, and location");
+                        return;
+                    }
+                    setBusy(true);
+                    const id = newId("emp_");
+                    try {
+                        await Store.set("employees/" + id, {
+                            name: name.trim(),
+                            phone: phone.trim(),
+                            location: location.trim(),
+                        });
+                        setName("");
+                        setPhone("");
+                        setLocation("");
+                        toast("Employee added");
+                    } catch (err) {
+                        toast((err && err.message) || "Could not add employee");
+                    }
+                    setBusy(false);
+                }
+
+                async function saveEdit() {
+                    if (
+                        !edit ||
+                        !edit.name.trim() ||
+                        !edit.phone.trim() ||
+                        !edit.location.trim()
+                    ) {
+                        toast("Enter employee name, phone number, and location");
+                        return;
+                    }
+                    setBusy(true);
+                    try {
+                        await Store.merge("employees/" + edit.id, {
+                            name: edit.name.trim(),
+                            phone: edit.phone.trim(),
+                            location: edit.location.trim(),
+                        });
+                        setEdit(null);
+                        toast("Employee updated");
+                    } catch (err) {
+                        toast((err && err.message) || "Could not update employee");
+                    }
+                    setBusy(false);
+                }
+
+                async function confirmDelete(emp) {
+                    setBusy(true);
+                    try {
+                        await Store.del("employees/" + emp.id);
+                        setDel(null);
+                        toast("Employee deleted");
+                    } catch (err) {
+                        toast((err && err.message) || "Could not delete employee");
+                    }
+                    setBusy(false);
+                }
+
+                const filtered = employees.filter((emp) => {
+                    const q = search.trim().toLowerCase();
+                    if (!q) return true;
+                    return (
+                        String(emp.name || "")
+                            .toLowerCase()
+                            .includes(q) ||
+                        String(emp.phone || "")
+                            .toLowerCase()
+                            .includes(q) ||
+                        String(emp.location || "")
+                            .toLowerCase()
+                            .includes(q)
+                    );
+                });
+
+                return html`<${React.Fragment}>
+                    <form class="panel" onSubmit=${addEmployee}>
+                        <div class="head">
+                            <div>
+                                <h2 style=${{ fontSize: "18px" }}>Add employee</h2>
+                                <div class="small muted">
+                                    Employee records are managed separately from user login accounts.
+                                </div>
+                            </div>
+                        </div>
+                        <div
+                            style=${{
+                                display: "grid",
+                                gridTemplateColumns:
+                                    "repeat(auto-fit, minmax(200px, 1fr))",
+                                gap: "10px",
+                            }}
+                        >
+                            <div class="field">
+                                <label class="label" for="emp-name">Employee name</label>
+                                <input
+                                    id="emp-name"
+                                    value=${name}
+                                    onChange=${(e) => setName(e.target.value)}
+                                    placeholder="e.g. Kasun Perera"
+                                />
+                            </div>
+                            <div class="field">
+                                <label class="label" for="emp-phone">Phone number</label>
+                                <input
+                                    id="emp-phone"
+                                    value=${phone}
+                                    onChange=${(e) => setPhone(e.target.value)}
+                                    placeholder="e.g. 077 123 4567"
+                                />
+                            </div>
+                            <div class="field">
+                                <label class="label" for="emp-location">Location</label>
+                                <input
+                                    id="emp-location"
+                                    value=${location}
+                                    onChange=${(e) => setLocation(e.target.value)}
+                                    placeholder="e.g. Maharagama"
+                                />
+                            </div>
+                        </div>
+                        <div>
+                            <button class="btn primary" type="submit" disabled=${busy}>
+                                Add employee
+                            </button>
+                        </div>
+                    </form>
+
+                    <div class="panel">
+                        <div
+                            class="head"
+                            style=${{
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "space-between",
+                                gap: "16px",
+                                flexWrap: "wrap",
+                            }}
+                        >
+                            <div>
+                                <h2 style=${{ fontSize: "18px" }}>
+                                    Employees (${filtered.length})
+                                </h2>
+                                <div class="small muted">
+                                    Profile directory with contact number and location.
+                                </div>
+                            </div>
+
+                            <input
+                                class="sel"
+                                type="search"
+                                style=${{
+                                    minWidth: "280px",
+                                    maxWidth: "100%",
+                                    boxSizing: "border-box",
+                                }}
+                                value=${search}
+                                onChange=${(e) => setSearch(e.target.value)}
+                                placeholder="Filter by name, phone or location..."
+                                aria-label="Filter employees"
+                            />
+                        </div>
+                        ${filtered.length === 0
+                            ? html`<div class="empty">
+                                  ${employees.length
+                                      ? "No employees match your filter."
+                                      : "No employees added yet. Use the form above to add your first employee."}
+                              </div>`
+                            : html`<div class="tablewrap">
+                                  <table>
+                                      <thead>
+                                          <tr>
+                                              <th>Employee name</th>
+                                              <th style=${{ textAlign: "left" }}>
+                                                  Phone number
+                                              </th>
+                                              <th style=${{ textAlign: "left" }}>
+                                                  Location
+                                              </th>
+                                              <th>Actions</th>
+                                          </tr>
+                                      </thead>
+                                      <tbody>
+                                          ${filtered.map((emp) => {
+                                              if (edit && edit.id === emp.id) {
+                                                  return html`<tr key=${emp.id}>
+                                                      <td>
+                                                          <input
+                                                              class="sel"
+                                                              value=${edit.name}
+                                                              onChange=${(e) =>
+                                                                  setEdit({
+                                                                      ...edit,
+                                                                      name: e.target
+                                                                          .value,
+                                                                  })}
+                                                              aria-label="Employee name"
+                                                          />
+                                                      </td>
+                                                      <td style=${{ textAlign: "left" }}>
+                                                          <input
+                                                              class="sel"
+                                                              value=${edit.phone}
+                                                              onChange=${(e) =>
+                                                                  setEdit({
+                                                                      ...edit,
+                                                                      phone: e.target
+                                                                          .value,
+                                                                  })}
+                                                              aria-label="Phone number"
+                                                          />
+                                                      </td>
+                                                      <td style=${{ textAlign: "left" }}>
+                                                          <input
+                                                              class="sel"
+                                                              value=${edit.location}
+                                                              onChange=${(e) =>
+                                                                  setEdit({
+                                                                      ...edit,
+                                                                      location: e.target
+                                                                          .value,
+                                                                  })}
+                                                              aria-label="Location"
+                                                          />
+                                                      </td>
+                                                      <td>
+                                                          <div
+                                                              class="toolbar"
+                                                              style=${{
+                                                                  justifyContent:
+                                                                      "flex-end",
+                                                              }}
+                                                          >
+                                                              <button
+                                                                  class="btn sm primary"
+                                                                  type="button"
+                                                                  disabled=${busy}
+                                                                  onClick=${saveEdit}
+                                                              >
+                                                                  Save
+                                                              </button>
+                                                              <button
+                                                                  class="btn sm"
+                                                                  type="button"
+                                                                  onClick=${() =>
+                                                                      setEdit(null)}
+                                                              >
+                                                                  Cancel
+                                                              </button>
+                                                          </div>
+                                                      </td>
+                                                  </tr>`;
+                                              }
+                                              return html`<tr key=${emp.id}>
+                                                  <td><b>${emp.name}</b></td>
+                                                  <td style=${{ textAlign: "left" }}>
+                                                      ${emp.phone}
+                                                  </td>
+                                                  <td style=${{ textAlign: "left" }}>
+                                                      ${emp.location}
+                                                  </td>
+                                                  <td>
+                                                      ${del === emp.id
+                                                          ? html`<div
+                                                                class="toolbar"
+                                                                style=${{
+                                                                    justifyContent:
+                                                                        "flex-end",
+                                                                }}
+                                                            >
+                                                                <span class="small" style=${{ color: "var(--danger)" }}>
+                                                                    Delete ${emp.name}?
+                                                                </span>
+                                                                <button
+                                                                    class="btn sm danger"
+                                                                    type="button"
+                                                                    disabled=${busy}
+                                                                    onClick=${() =>
+                                                                        confirmDelete(
+                                                                            emp,
+                                                                        )}
+                                                                >
+                                                                    Delete
+                                                                </button>
+                                                                <button
+                                                                    class="btn sm"
+                                                                    type="button"
+                                                                    onClick=${() =>
+                                                                        setDel(null)}
+                                                                >
+                                                                    Cancel
+                                                                </button>
+                                                            </div>`
+                                                          : html`<div
+                                                                class="toolbar"
+                                                                style=${{
+                                                                    justifyContent:
+                                                                        "flex-end",
+                                                                }}
+                                                            >
+                                                                <button
+                                                                    class="btn sm"
+                                                                    type="button"
+                                                                    onClick=${() =>
+                                                                        setEdit({
+                                                                            ...emp,
+                                                                        })}
+                                                                >
+                                                                    Edit
+                                                                </button>
+                                                                <button
+                                                                    class="btn sm ghost"
+                                                                    type="button"
+                                                                    style=${{
+                                                                        color: "var(--danger)",
+                                                                    }}
+                                                                    onClick=${() =>
+                                                                        setDel(emp.id)}
+                                                                >
+                                                                    Delete
+                                                                </button>
+                                                            </div>`}
+                                                  </td>
+                                              </tr>`;
+                                          })}
+                                      </tbody>
+                                  </table>
+                              </div>`}
+                    </div>
+                </${React.Fragment}>`;
+            }
+
+            function SalaryAdvancesSection({ employees, advances, toast }) {
+                const defaultMonth = todayStr().slice(0, 7);
+                const [employeeId, setEmployeeId] = useState(
+                    (employees[0] && employees[0].id) || "",
+                );
+                const [amount, setAmount] = useState("");
+                const [requestDate, setRequestDate] = useState(todayStr());
+                const [salaryMonth, setSalaryMonth] = useState(defaultMonth);
+                const [status, setStatus] = useState("approved");
+                const [filterMonth, setFilterMonth] = useState(defaultMonth);
+                const [filterEmp, setFilterEmp] = useState("all");
+                const [edit, setEdit] = useState(null);
+                const [del, setDel] = useState(null);
+                const [busy, setBusy] = useState(false);
+
+                useEffect(() => {
+                    if (
+                        employees.length &&
+                        !employees.find((e) => e.id === employeeId)
+                    ) {
+                        setEmployeeId(employees[0].id);
+                    }
+                }, [employees]);
+
+                const empById = useMemo(
+                    () => Object.fromEntries(employees.map((e) => [e.id, e])),
+                    [employees],
+                );
+
+                async function addAdvance(e) {
+                    e.preventDefault();
+                    if (!employeeId) {
+                        toast("Select an employee first");
+                        return;
+                    }
+                    if (!(Number(amount) > 0)) {
+                        toast("Enter a valid advance amount");
+                        return;
+                    }
+                    if (!requestDate || !salaryMonth) {
+                        toast("Select request date and salary month");
+                        return;
+                    }
+                    setBusy(true);
+                    const id = newId("adv_");
+                    try {
+                        await Store.set("salary-advances/" + id, {
+                            employeeId,
+                            amount: Number(amount),
+                            requestDate,
+                            salaryMonth,
+                            status,
+                        });
+                        setAmount("");
+                        toast("Salary advance recorded");
+                    } catch (err) {
+                        toast(
+                            (err && err.message) ||
+                                "Could not save salary advance",
+                        );
+                    }
+                    setBusy(false);
+                }
+
+                async function updateAdvanceStatus(adv, nextStatus) {
+                    setBusy(true);
+                    try {
+                        await Store.merge("salary-advances/" + adv.id, {
+                            status: nextStatus,
+                        });
+                        toast(`Advance marked as ${nextStatus}`);
+                    } catch (err) {
+                        toast((err && err.message) || "Could not update status");
+                    }
+                    setBusy(false);
+                }
+
+                async function saveEdit() {
+                    if (!edit || !(Number(edit.amount) > 0)) {
+                        toast("Enter a valid advance amount");
+                        return;
+                    }
+                    setBusy(true);
+                    try {
+                        await Store.merge("salary-advances/" + edit.id, {
+                            employeeId: edit.employeeId,
+                            amount: Number(edit.amount),
+                            requestDate: edit.requestDate,
+                            salaryMonth: edit.salaryMonth,
+                            status: edit.status,
+                        });
+                        setEdit(null);
+                        toast("Salary advance updated");
+                    } catch (err) {
+                        toast((err && err.message) || "Could not update advance");
+                    }
+                    setBusy(false);
+                }
+
+                async function confirmDelete(adv) {
+                    setBusy(true);
+                    try {
+                        await Store.del("salary-advances/" + adv.id);
+                        setDel(null);
+                        toast("Salary advance deleted");
+                    } catch (err) {
+                        toast((err && err.message) || "Could not delete advance");
+                    }
+                    setBusy(false);
+                }
+
+                const filteredAdvances = advances.filter((adv) => {
+                    if (filterMonth && adv.salaryMonth !== filterMonth) return false;
+                    if (filterEmp !== "all" && adv.employeeId !== filterEmp)
+                        return false;
+                    return true;
+                });
+
+                const monthlyDeductionRows = useMemo(() => {
+                    const map = {};
+                    filteredAdvances
+                        .filter((adv) => adv.status === "approved")
+                        .forEach((adv) => {
+                            const key = `${adv.employeeId}|${adv.salaryMonth}`;
+                            if (!map[key]) {
+                                map[key] = {
+                                    employeeId: adv.employeeId,
+                                    employeeName:
+                                        (empById[adv.employeeId] &&
+                                            empById[adv.employeeId].name) ||
+                                        adv.employeeName ||
+                                        "Employee",
+                                    salaryMonth: adv.salaryMonth,
+                                    count: 0,
+                                    totalApproved: 0,
+                                };
+                            }
+                            map[key].count += 1;
+                            map[key].totalApproved += Number(adv.amount) || 0;
+                        });
+                    return Object.values(map).sort((a, b) =>
+                        String(a.employeeName).localeCompare(b.employeeName),
+                    );
+                }, [filteredAdvances, empById]);
+
+                const totalApprovedForFilter = sum(
+                    monthlyDeductionRows.map((r) => r.totalApproved),
+                );
+                const pendingCount = filteredAdvances.filter(
+                    (a) => a.status === "pending",
+                ).length;
+
+                if (!employees.length) {
+                    return html`<div class="empty">
+                        Add employees in the Employees tab before recording salary advances.
+                    </div>`;
+                }
+
+                return html`<${React.Fragment}>
+                    <form class="panel" onSubmit=${addAdvance}>
+                        <div class="head">
+                            <div>
+                                <h2 style=${{ fontSize: "18px" }}>
+                                    Record salary advance
+                                </h2>
+                                <div class="small muted">
+                                    Record mid-month salary advance requests and track approved totals to deduct for each salary month.
+                                </div>
+                            </div>
+                        </div>
+                        <div
+                            style=${{
+                                display: "grid",
+                                gridTemplateColumns:
+                                    "repeat(auto-fit, minmax(175px, 1fr))",
+                                gap: "10px",
+                            }}
+                        >
+                            <div class="field">
+                                <label class="label" for="adv-emp">Employee</label>
+                                <select
+                                    id="adv-emp"
+                                    value=${employeeId}
+                                    onChange=${(e) =>
+                                        setEmployeeId(e.target.value)}
+                                >
+                                    ${employees.map(
+                                        (emp) =>
+                                            html`<option
+                                                key=${emp.id}
+                                                value=${emp.id}
+                                            >
+                                                ${emp.name}
+                                            </option>`,
+                                    )}
+                                </select>
+                            </div>
+                            <div class="field">
+                                <label class="label" for="adv-amt">
+                                    Advance amount (Rs.)
+                                </label>
+                                <input
+                                    id="adv-amt"
+                                    type="number"
+                                    inputmode="decimal"
+                                    min="1"
+                                    step="0.01"
+                                    value=${amount}
+                                    onChange=${(e) => setAmount(e.target.value)}
+                                    placeholder="e.g. 5000"
+                                />
+                            </div>
+                            <div class="field">
+                                <label class="label" for="adv-date">
+                                    Request date
+                                </label>
+                                <input
+                                    id="adv-date"
+                                    type="date"
+                                    value=${requestDate}
+                                    onChange=${(e) =>
+                                        setRequestDate(e.target.value)}
+                                />
+                            </div>
+                            <div class="field">
+                                <label class="label" for="adv-month">
+                                    Salary month
+                                </label>
+                                <input
+                                    id="adv-month"
+                                    type="month"
+                                    value=${salaryMonth}
+                                    onChange=${(e) =>
+                                        setSalaryMonth(e.target.value)}
+                                />
+                            </div>
+                            <div class="field">
+                                <label class="label" for="adv-status">Status</label>
+                                <select
+                                    id="adv-status"
+                                    value=${status}
+                                    onChange=${(e) => setStatus(e.target.value)}
+                                >
+                                    <option value="pending">Pending</option>
+                                    <option value="approved">Approved</option>
+                                    <option value="rejected">Rejected</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div>
+                            <button
+                                class="btn primary"
+                                type="submit"
+                                disabled=${busy}
+                            >
+                                Save advance
+                            </button>
+                        </div>
+                    </form>
+
+                    <div class="panel">
+                        <div class="head">
+                            <div>
+                                <h2 style=${{ fontSize: "18px" }}>
+                                    Approved advances to deduct
+                                    ${filterMonth ? ` · ${niceMonth(filterMonth)}` : ""}
+                                </h2>
+                                <div class="small muted">
+                                    Total approved salary advances per employee and salary month.
+                                </div>
+                            </div>
+                            <div class="toolbar">
+                                <label class="small muted" for="f-adv-month">
+                                    Month
+                                </label>
+                                <input
+                                    id="f-adv-month"
+                                    class="sel"
+                                    type="month"
+                                    value=${filterMonth}
+                                    onChange=${(e) =>
+                                        setFilterMonth(e.target.value)}
+                                />
+                                ${filterMonth &&
+                                html`<button
+                                    class="btn sm ghost"
+                                    type="button"
+                                    onClick=${() => setFilterMonth("")}
+                                >
+                                    All months
+                                </button>`}
+                                <select
+                                    class="sel"
+                                    value=${filterEmp}
+                                    onChange=${(e) =>
+                                        setFilterEmp(e.target.value)}
+                                    aria-label="Filter by employee"
+                                >
+                                    <option value="all">All employees</option>
+                                    ${employees.map(
+                                        (emp) =>
+                                            html`<option
+                                                key=${emp.id}
+                                                value=${emp.id}
+                                            >
+                                                ${emp.name}
+                                            </option>`,
+                                    )}
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="stats">
+                            <div class="stat">
+                                <span class="label">Total approved advances</span>
+                                <b style=${{ fontSize: "22px", color: "var(--accent)" }}>
+                                    ${rs(totalApprovedForFilter)}
+                                </b>
+                            </div>
+                            <div class="stat">
+                                <span class="label">Employees with approved advances</span>
+                                <b>${monthlyDeductionRows.length}</b>
+                            </div>
+                            <div class="stat">
+                                <span class="label">Pending requests</span>
+                                <b>${pendingCount}</b>
+                            </div>
+                        </div>
+
+                        ${monthlyDeductionRows.length > 0 &&
+                        html`<div class="tablewrap">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Employee</th>
+                                        <th style=${{ textAlign: "left" }}>
+                                            Salary month
+                                        </th>
+                                        <th>Approved requests</th>
+                                        <th>Total approved to deduct</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${monthlyDeductionRows.map(
+                                        (row) =>
+                                            html`<tr
+                                                key=${row.employeeId +
+                                                "_" +
+                                                row.salaryMonth}
+                                            >
+                                                <td><b>${row.employeeName}</b></td>
+                                                <td style=${{ textAlign: "left" }}>
+                                                    ${niceMonth(row.salaryMonth)}
+                                                </td>
+                                                <td>${row.count}</td>
+                                                <td class="grand">
+                                                    ${rs(row.totalApproved)}
+                                                </td>
+                                            </tr>`,
+                                    )}
+                                </tbody>
+                                <tfoot>
+                                    <tr>
+                                        <td>Total</td>
+                                        <td></td>
+                                        <td>
+                                            ${sum(
+                                                monthlyDeductionRows.map(
+                                                    (r) => r.count,
+                                                ),
+                                            )}
+                                        </td>
+                                        <td>${rs(totalApprovedForFilter)}</td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>`}
+                    </div>
+
+                    <div class="panel">
+                        <div class="head">
+                            <h2 style=${{ fontSize: "18px" }}>
+                                Advance requests (${filteredAdvances.length})
+                            </h2>
+                        </div>
+                        ${filteredAdvances.length === 0
+                            ? html`<div class="empty">
+                                  No salary advance records for this filter.
+                              </div>`
+                            : html`<div class="tablewrap">
+                                  <table>
+                                      <thead>
+                                          <tr>
+                                              <th>Employee</th>
+                                              <th style=${{ textAlign: "left" }}>
+                                                  Request date
+                                              </th>
+                                              <th style=${{ textAlign: "left" }}>
+                                                  Salary month
+                                              </th>
+                                              <th>Amount</th>
+                                              <th>Status</th>
+                                              <th>Actions</th>
+                                          </tr>
+                                      </thead>
+                                      <tbody>
+                                          ${filteredAdvances.map((adv) => {
+                                              const empName =
+                                                  (empById[adv.employeeId] &&
+                                                      empById[adv.employeeId]
+                                                          .name) ||
+                                                  adv.employeeName ||
+                                                  "Employee";
+                                              if (edit && edit.id === adv.id) {
+                                                  return html`<tr key=${adv.id}>
+                                                      <td>
+                                                          <select
+                                                              class="sel"
+                                                              value=${edit.employeeId}
+                                                              onChange=${(e) =>
+                                                                  setEdit({
+                                                                      ...edit,
+                                                                      employeeId:
+                                                                          e.target
+                                                                              .value,
+                                                                  })}
+                                                          >
+                                                              ${employees.map(
+                                                                  (emp) =>
+                                                                      html`<option
+                                                                          key=${emp.id}
+                                                                          value=${emp.id}
+                                                                      >
+                                                                          ${emp.name}
+                                                                      </option>`,
+                                                              )}
+                                                          </select>
+                                                      </td>
+                                                      <td style=${{ textAlign: "left" }}>
+                                                          <input
+                                                              class="sel"
+                                                              type="date"
+                                                              value=${edit.requestDate}
+                                                              onChange=${(e) =>
+                                                                  setEdit({
+                                                                      ...edit,
+                                                                      requestDate:
+                                                                          e.target
+                                                                              .value,
+                                                                  })}
+                                                          />
+                                                      </td>
+                                                      <td style=${{ textAlign: "left" }}>
+                                                          <input
+                                                              class="sel"
+                                                              type="month"
+                                                              value=${edit.salaryMonth}
+                                                              onChange=${(e) =>
+                                                                  setEdit({
+                                                                      ...edit,
+                                                                      salaryMonth:
+                                                                          e.target
+                                                                              .value,
+                                                                  })}
+                                                          />
+                                                      </td>
+                                                      <td>
+                                                          <input
+                                                              class="mini wide"
+                                                              type="number"
+                                                              min="1"
+                                                              step="0.01"
+                                                              value=${edit.amount}
+                                                              onChange=${(e) =>
+                                                                  setEdit({
+                                                                      ...edit,
+                                                                      amount: e
+                                                                          .target
+                                                                          .value,
+                                                                  })}
+                                                          />
+                                                      </td>
+                                                      <td>
+                                                          <select
+                                                              class="sel"
+                                                              value=${edit.status}
+                                                              onChange=${(e) =>
+                                                                  setEdit({
+                                                                      ...edit,
+                                                                      status: e
+                                                                          .target
+                                                                          .value,
+                                                                  })}
+                                                          >
+                                                              <option value="pending">
+                                                                  Pending
+                                                              </option>
+                                                              <option value="approved">
+                                                                  Approved
+                                                              </option>
+                                                              <option value="rejected">
+                                                                  Rejected
+                                                              </option>
+                                                          </select>
+                                                      </td>
+                                                      <td>
+                                                          <div
+                                                              class="toolbar"
+                                                              style=${{
+                                                                  justifyContent:
+                                                                      "flex-end",
+                                                              }}
+                                                          >
+                                                              <button
+                                                                  class="btn sm primary"
+                                                                  type="button"
+                                                                  disabled=${busy}
+                                                                  onClick=${saveEdit}
+                                                              >
+                                                                  Save
+                                                              </button>
+                                                              <button
+                                                                  class="btn sm"
+                                                                  type="button"
+                                                                  onClick=${() =>
+                                                                      setEdit(null)}
+                                                              >
+                                                                  Cancel
+                                                              </button>
+                                                          </div>
+                                                      </td>
+                                                  </tr>`;
+                                              }
+                                              return html`<tr key=${adv.id}>
+                                                  <td><b>${empName}</b></td>
+                                                  <td style=${{ textAlign: "left" }}>
+                                                      ${niceDate(adv.requestDate)}
+                                                  </td>
+                                                  <td style=${{ textAlign: "left" }}>
+                                                      ${niceMonth(adv.salaryMonth)}
+                                                  </td>
+                                                  <td><b>${rs(adv.amount)}</b></td>
+                                                  <td>
+                                                      <${EmpStatusPill}
+                                                          status=${adv.status}
+                                                      />
+                                                  </td>
+                                                  <td>
+                                                      ${del === adv.id
+                                                          ? html`<div
+                                                                class="toolbar"
+                                                                style=${{
+                                                                    justifyContent:
+                                                                        "flex-end",
+                                                                }}
+                                                            >
+                                                                <button
+                                                                    class="btn sm danger"
+                                                                    type="button"
+                                                                    disabled=${busy}
+                                                                    onClick=${() =>
+                                                                        confirmDelete(
+                                                                            adv,
+                                                                        )}
+                                                                >
+                                                                    Delete
+                                                                </button>
+                                                                <button
+                                                                    class="btn sm"
+                                                                    type="button"
+                                                                    onClick=${() =>
+                                                                        setDel(null)}
+                                                                >
+                                                                    Cancel
+                                                                </button>
+                                                            </div>`
+                                                          : html`<div
+                                                                class="toolbar"
+                                                                style=${{
+                                                                    justifyContent:
+                                                                        "flex-end",
+                                                                }}
+                                                            >
+                                                                ${adv.status !==
+                                                                    "approved" &&
+                                                                html`<button
+                                                                    class="btn sm"
+                                                                    type="button"
+                                                                    disabled=${busy}
+                                                                    onClick=${() =>
+                                                                        updateAdvanceStatus(
+                                                                            adv,
+                                                                            "approved",
+                                                                        )}
+                                                                >
+                                                                    Approve
+                                                                </button>`}
+                                                                ${adv.status !==
+                                                                    "rejected" &&
+                                                                html`<button
+                                                                    class="btn sm"
+                                                                    type="button"
+                                                                    disabled=${busy}
+                                                                    onClick=${() =>
+                                                                        updateAdvanceStatus(
+                                                                            adv,
+                                                                            "rejected",
+                                                                        )}
+                                                                >
+                                                                    Reject
+                                                                </button>`}
+                                                                <button
+                                                                    class="btn sm"
+                                                                    type="button"
+                                                                    onClick=${() =>
+                                                                        setEdit({
+                                                                            ...adv,
+                                                                        })}
+                                                                >
+                                                                    Edit
+                                                                </button>
+                                                                <button
+                                                                    class="btn sm ghost"
+                                                                    type="button"
+                                                                    style=${{
+                                                                        color: "var(--danger)",
+                                                                    }}
+                                                                    onClick=${() =>
+                                                                        setDel(adv.id)}
+                                                                >
+                                                                    Delete
+                                                                </button>
+                                                            </div>`}
+                                                  </td>
+                                              </tr>`;
+                                          })}
+                                      </tbody>
+                                  </table>
+                              </div>`}
+                    </div>
+                </${React.Fragment}>`;
+            }
+
+            function EmployeeLeavesSection({ employees, leaves, toast }) {
+                const [employeeId, setEmployeeId] = useState(
+                    (employees[0] && employees[0].id) || "",
+                );
+                const [leaveType, setLeaveType] = useState(LEAVE_TYPES[0]);
+                const [startDate, setStartDate] = useState(todayStr());
+                const [endDate, setEndDate] = useState(todayStr());
+                const [reason, setReason] = useState("");
+                const [status, setStatus] = useState("pending");
+                const [filterEmp, setFilterEmp] = useState("all");
+                const [filterStatus, setFilterStatus] = useState("all");
+                const [edit, setEdit] = useState(null);
+                const [del, setDel] = useState(null);
+                const [busy, setBusy] = useState(false);
+
+                useEffect(() => {
+                    if (
+                        employees.length &&
+                        !employees.find((e) => e.id === employeeId)
+                    ) {
+                        setEmployeeId(employees[0].id);
+                    }
+                }, [employees]);
+
+                const empById = useMemo(
+                    () => Object.fromEntries(employees.map((e) => [e.id, e])),
+                    [employees],
+                );
+
+                const leaveDays = (start, end) => {
+                    try {
+                        const s = new Date(start + "T00:00:00");
+                        const e = new Date(end + "T00:00:00");
+                        const diff = Math.round((e - s) / 86400000) + 1;
+                        return diff > 0 ? diff : 1;
+                    } catch {
+                        return 1;
+                    }
+                };
+
+                async function addLeave(e) {
+                    e.preventDefault();
+                    if (!employeeId) {
+                        toast("Select an employee first");
+                        return;
+                    }
+                    if (!startDate || !endDate || endDate < startDate) {
+                        toast("End date must be on or after start date");
+                        return;
+                    }
+                    setBusy(true);
+                    const id = newId("lv_");
+                    try {
+                        await Store.set("employee-leaves/" + id, {
+                            employeeId,
+                            leaveType,
+                            startDate,
+                            endDate,
+                            reason: reason.trim(),
+                            status,
+                        });
+                        setReason("");
+                        toast("Leave request recorded");
+                    } catch (err) {
+                        toast((err && err.message) || "Could not save leave");
+                    }
+                    setBusy(false);
+                }
+
+                async function updateLeaveStatus(lv, nextStatus) {
+                    setBusy(true);
+                    try {
+                        await Store.merge("employee-leaves/" + lv.id, {
+                            status: nextStatus,
+                        });
+                        toast(`Leave request ${nextStatus}`);
+                    } catch (err) {
+                        toast((err && err.message) || "Could not update leave");
+                    }
+                    setBusy(false);
+                }
+
+                async function saveEdit() {
+                    if (
+                        !edit ||
+                        !edit.startDate ||
+                        !edit.endDate ||
+                        edit.endDate < edit.startDate
+                    ) {
+                        toast("End date must be on or after start date");
+                        return;
+                    }
+                    setBusy(true);
+                    try {
+                        await Store.merge("employee-leaves/" + edit.id, {
+                            employeeId: edit.employeeId,
+                            leaveType: edit.leaveType,
+                            startDate: edit.startDate,
+                            endDate: edit.endDate,
+                            reason: (edit.reason || "").trim(),
+                            status: edit.status,
+                        });
+                        setEdit(null);
+                        toast("Leave record updated");
+                    } catch (err) {
+                        toast((err && err.message) || "Could not update leave");
+                    }
+                    setBusy(false);
+                }
+
+                async function confirmDelete(lv) {
+                    setBusy(true);
+                    try {
+                        await Store.del("employee-leaves/" + lv.id);
+                        setDel(null);
+                        toast("Leave record deleted");
+                    } catch (err) {
+                        toast((err && err.message) || "Could not delete leave");
+                    }
+                    setBusy(false);
+                }
+
+                const filteredLeaves = leaves.filter((lv) => {
+                    if (filterEmp !== "all" && lv.employeeId !== filterEmp)
+                        return false;
+                    if (filterStatus !== "all" && lv.status !== filterStatus)
+                        return false;
+                    return true;
+                });
+
+                const historyByEmployee = useMemo(() => {
+                    return employees.map((emp) => {
+                        const empLeaves = leaves.filter(
+                            (l) => l.employeeId === emp.id,
+                        );
+                        const approvedDays = sum(
+                            empLeaves
+                                .filter((l) => l.status === "approved")
+                                .map((l) => leaveDays(l.startDate, l.endDate)),
+                        );
+                        const pending = empLeaves.filter(
+                            (l) => l.status === "pending",
+                        ).length;
+                        return {
+                            emp,
+                            totalRequests: empLeaves.length,
+                            approvedDays,
+                            pending,
+                        };
+                    });
+                }, [employees, leaves]);
+
+                if (!employees.length) {
+                    return html`<div class="empty">
+                        Add employees in the Employees tab before recording leave requests.
+                    </div>`;
+                }
+
+                return html`<${React.Fragment}>
+                    <form class="panel" onSubmit=${addLeave}>
+                        <div class="head">
+                            <div>
+                                <h2 style=${{ fontSize: "18px" }}>
+                                    Record employee leave
+                                </h2>
+                                <div class="small muted">
+                                    Record, approve, or reject employee leave requests.
+                                </div>
+                            </div>
+                        </div>
+                        <div
+                            style=${{
+                                display: "grid",
+                                gridTemplateColumns:
+                                    "repeat(auto-fit, minmax(170px, 1fr))",
+                                gap: "10px",
+                            }}
+                        >
+                            <div class="field">
+                                <label class="label" for="lv-emp">Employee</label>
+                                <select
+                                    id="lv-emp"
+                                    value=${employeeId}
+                                    onChange=${(e) =>
+                                        setEmployeeId(e.target.value)}
+                                >
+                                    ${employees.map(
+                                        (emp) =>
+                                            html`<option
+                                                key=${emp.id}
+                                                value=${emp.id}
+                                            >
+                                                ${emp.name}
+                                            </option>`,
+                                    )}
+                                </select>
+                            </div>
+                            <div class="field">
+                                <label class="label" for="lv-type">
+                                    Leave type
+                                </label>
+                                <select
+                                    id="lv-type"
+                                    value=${leaveType}
+                                    onChange=${(e) =>
+                                        setLeaveType(e.target.value)}
+                                >
+                                    ${LEAVE_TYPES.map(
+                                        (t) =>
+                                            html`<option key=${t} value=${t}>
+                                                ${t}
+                                            </option>`,
+                                    )}
+                                </select>
+                            </div>
+                            <div class="field">
+                                <label class="label" for="lv-start">
+                                    Start date
+                                </label>
+                                <input
+                                    id="lv-start"
+                                    type="date"
+                                    value=${startDate}
+                                    onChange=${(e) => {
+                                        setStartDate(e.target.value);
+                                        if (endDate < e.target.value)
+                                            setEndDate(e.target.value);
+                                    }}
+                                />
+                            </div>
+                            <div class="field">
+                                <label class="label" for="lv-end">End date</label>
+                                <input
+                                    id="lv-end"
+                                    type="date"
+                                    value=${endDate}
+                                    min=${startDate}
+                                    onChange=${(e) =>
+                                        setEndDate(e.target.value)}
+                                />
+                            </div>
+                            <div class="field">
+                                <label class="label" for="lv-status">Status</label>
+                                <select
+                                    id="lv-status"
+                                    value=${status}
+                                    onChange=${(e) => setStatus(e.target.value)}
+                                >
+                                    <option value="pending">Pending</option>
+                                    <option value="approved">Approved</option>
+                                    <option value="rejected">Rejected</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="field">
+                            <label class="label" for="lv-reason">Reason</label>
+                            <input
+                                id="lv-reason"
+                                value=${reason}
+                                onChange=${(e) => setReason(e.target.value)}
+                                placeholder="Optional reason or note"
+                            />
+                        </div>
+                        <div>
+                            <button
+                                class="btn primary"
+                                type="submit"
+                                disabled=${busy}
+                            >
+                                Save leave request
+                            </button>
+                        </div>
+                    </form>
+
+                    <div class="panel">
+                        <div class="head">
+                            <div>
+                                <h2 style=${{ fontSize: "18px" }}>
+                                    Employee leave summary
+                                </h2>
+                                <div class="small muted">
+                                    Click an employee to filter their leave history below.
+                                </div>
+                            </div>
+                            ${filterEmp !== "all" &&
+                            html`<button
+                                class="btn sm ghost"
+                                type="button"
+                                onClick=${() => setFilterEmp("all")}
+                            >
+                                Show all employees
+                            </button>`}
+                        </div>
+                        <div class="cards">
+                            ${historyByEmployee.map(
+                                ({ emp, totalRequests, approvedDays, pending }) =>
+                                    html`<div
+                                        class="card"
+                                        key=${emp.id}
+                                        style=${{
+                                            cursor: "pointer",
+                                            borderColor:
+                                                filterEmp === emp.id
+                                                    ? "var(--accent)"
+                                                    : "var(--line)",
+                                        }}
+                                        onClick=${() =>
+                                            setFilterEmp(
+                                                filterEmp === emp.id
+                                                    ? "all"
+                                                    : emp.id,
+                                            )}
+                                    >
+                                        <h3>
+                                            <span>${emp.name}</span>
+                                            <span class="pill done">
+                                                ${approvedDays}
+                                                day${approvedDays === 1 ? "" : "s"}
+                                            </span>
+                                        </h3>
+                                        <div class="kv">
+                                            <span>Total requests</span>
+                                            <span>${totalRequests}</span>
+                                        </div>
+                                        <div class="kv">
+                                            <span>Pending approval</span>
+                                            <span>${pending}</span>
+                                        </div>
+                                    </div>`,
+                            )}
+                        </div>
+                    </div>
+
+                    <div class="panel">
+                        <div class="head">
+                            <h2 style=${{ fontSize: "18px" }}>
+                                Leave history (${filteredLeaves.length})
+                            </h2>
+                            <div class="toolbar">
+                                <select
+                                    class="sel"
+                                    value=${filterEmp}
+                                    onChange=${(e) =>
+                                        setFilterEmp(e.target.value)}
+                                    aria-label="Filter leave history by employee"
+                                >
+                                    <option value="all">All employees</option>
+                                    ${employees.map(
+                                        (emp) =>
+                                            html`<option
+                                                key=${emp.id}
+                                                value=${emp.id}
+                                            >
+                                                ${emp.name}
+                                            </option>`,
+                                    )}
+                                </select>
+                                <select
+                                    class="sel"
+                                    value=${filterStatus}
+                                    onChange=${(e) =>
+                                        setFilterStatus(e.target.value)}
+                                    aria-label="Filter leave history by status"
+                                >
+                                    <option value="all">All statuses</option>
+                                    <option value="pending">Pending</option>
+                                    <option value="approved">Approved</option>
+                                    <option value="rejected">Rejected</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        ${filteredLeaves.length === 0
+                            ? html`<div class="empty">
+                                  No leave records found for this filter.
+                              </div>`
+                            : html`<div class="tablewrap">
+                                  <table>
+                                      <thead>
+                                          <tr>
+                                              <th>Employee</th>
+                                              <th style=${{ textAlign: "left" }}>
+                                                  Type
+                                              </th>
+                                              <th style=${{ textAlign: "left" }}>
+                                                  Dates
+                                              </th>
+                                              <th>Days</th>
+                                              <th style=${{ textAlign: "left" }}>
+                                                  Reason
+                                              </th>
+                                              <th>Status</th>
+                                              <th>Actions</th>
+                                          </tr>
+                                      </thead>
+                                      <tbody>
+                                          ${filteredLeaves.map((lv) => {
+                                              const empName =
+                                                  (empById[lv.employeeId] &&
+                                                      empById[lv.employeeId]
+                                                          .name) ||
+                                                  lv.employeeName ||
+                                                  "Employee";
+                                              const daysCount = leaveDays(
+                                                  lv.startDate,
+                                                  lv.endDate,
+                                              );
+                                              if (edit && edit.id === lv.id) {
+                                                  return html`<tr key=${lv.id}>
+                                                      <td>
+                                                          <select
+                                                              class="sel"
+                                                              value=${edit.employeeId}
+                                                              onChange=${(e) =>
+                                                                  setEdit({
+                                                                      ...edit,
+                                                                      employeeId:
+                                                                          e.target
+                                                                              .value,
+                                                                  })}
+                                                          >
+                                                              ${employees.map(
+                                                                  (emp) =>
+                                                                      html`<option
+                                                                          key=${emp.id}
+                                                                          value=${emp.id}
+                                                                      >
+                                                                          ${emp.name}
+                                                                      </option>`,
+                                                              )}
+                                                          </select>
+                                                      </td>
+                                                      <td style=${{ textAlign: "left" }}>
+                                                          <select
+                                                              class="sel"
+                                                              value=${edit.leaveType}
+                                                              onChange=${(e) =>
+                                                                  setEdit({
+                                                                      ...edit,
+                                                                      leaveType:
+                                                                          e.target
+                                                                              .value,
+                                                                  })}
+                                                          >
+                                                              ${LEAVE_TYPES.map(
+                                                                  (t) =>
+                                                                      html`<option
+                                                                          key=${t}
+                                                                          value=${t}
+                                                                      >
+                                                                          ${t}
+                                                                      </option>`,
+                                                              )}
+                                                          </select>
+                                                      </td>
+                                                      <td style=${{ textAlign: "left" }}>
+                                                          <div class="toolbar">
+                                                              <input
+                                                                  class="sel"
+                                                                  type="date"
+                                                                  value=${edit.startDate}
+                                                                  onChange=${(
+                                                                      e,
+                                                                  ) =>
+                                                                      setEdit({
+                                                                          ...edit,
+                                                                          startDate:
+                                                                              e
+                                                                                  .target
+                                                                                  .value,
+                                                                      })}
+                                                              />
+                                                              <input
+                                                                  class="sel"
+                                                                  type="date"
+                                                                  value=${edit.endDate}
+                                                                  onChange=${(
+                                                                      e,
+                                                                  ) =>
+                                                                      setEdit({
+                                                                          ...edit,
+                                                                          endDate:
+                                                                              e
+                                                                                  .target
+                                                                                  .value,
+                                                                      })}
+                                                              />
+                                                          </div>
+                                                      </td>
+                                                      <td>
+                                                          ${leaveDays(
+                                                              edit.startDate,
+                                                              edit.endDate,
+                                                          )}
+                                                      </td>
+                                                      <td style=${{ textAlign: "left" }}>
+                                                          <input
+                                                              class="sel"
+                                                              value=${edit.reason ||
+                                                              ""}
+                                                              onChange=${(e) =>
+                                                                  setEdit({
+                                                                      ...edit,
+                                                                      reason: e
+                                                                          .target
+                                                                          .value,
+                                                                  })}
+                                                          />
+                                                      </td>
+                                                      <td>
+                                                          <select
+                                                              class="sel"
+                                                              value=${edit.status}
+                                                              onChange=${(e) =>
+                                                                  setEdit({
+                                                                      ...edit,
+                                                                      status: e
+                                                                          .target
+                                                                          .value,
+                                                                  })}
+                                                          >
+                                                              <option value="pending">
+                                                                  Pending
+                                                              </option>
+                                                              <option value="approved">
+                                                                  Approved
+                                                              </option>
+                                                              <option value="rejected">
+                                                                  Rejected
+                                                              </option>
+                                                          </select>
+                                                      </td>
+                                                      <td>
+                                                          <div
+                                                              class="toolbar"
+                                                              style=${{
+                                                                  justifyContent:
+                                                                      "flex-end",
+                                                              }}
+                                                          >
+                                                              <button
+                                                                  class="btn sm primary"
+                                                                  type="button"
+                                                                  disabled=${busy}
+                                                                  onClick=${saveEdit}
+                                                              >
+                                                                  Save
+                                                              </button>
+                                                              <button
+                                                                  class="btn sm"
+                                                                  type="button"
+                                                                  onClick=${() =>
+                                                                      setEdit(null)}
+                                                              >
+                                                                  Cancel
+                                                              </button>
+                                                          </div>
+                                                      </td>
+                                                  </tr>`;
+                                              }
+                                              return html`<tr key=${lv.id}>
+                                                  <td><b>${empName}</b></td>
+                                                  <td style=${{ textAlign: "left" }}>
+                                                      ${lv.leaveType}
+                                                  </td>
+                                                  <td style=${{ textAlign: "left" }}>
+                                                      ${lv.startDate === lv.endDate
+                                                          ? niceDate(lv.startDate)
+                                                          : `${niceDate(lv.startDate)} → ${niceDate(lv.endDate)}`}
+                                                  </td>
+                                                  <td>${daysCount}</td>
+                                                  <td style=${{ textAlign: "left" }}>
+                                                      ${lv.reason || "–"}
+                                                  </td>
+                                                  <td>
+                                                      <${EmpStatusPill}
+                                                          status=${lv.status}
+                                                      />
+                                                  </td>
+                                                  <td>
+                                                      ${del === lv.id
+                                                          ? html`<div
+                                                                class="toolbar"
+                                                                style=${{
+                                                                    justifyContent:
+                                                                        "flex-end",
+                                                                }}
+                                                            >
+                                                                <button
+                                                                    class="btn sm danger"
+                                                                    type="button"
+                                                                    disabled=${busy}
+                                                                    onClick=${() =>
+                                                                        confirmDelete(
+                                                                            lv,
+                                                                        )}
+                                                                >
+                                                                    Delete
+                                                                </button>
+                                                                <button
+                                                                    class="btn sm"
+                                                                    type="button"
+                                                                    onClick=${() =>
+                                                                        setDel(null)}
+                                                                >
+                                                                    Cancel
+                                                                </button>
+                                                            </div>`
+                                                          : html`<div
+                                                                class="toolbar"
+                                                                style=${{
+                                                                    justifyContent:
+                                                                        "flex-end",
+                                                                }}
+                                                            >
+                                                                ${lv.status !==
+                                                                    "approved" &&
+                                                                html`<button
+                                                                    class="btn sm"
+                                                                    type="button"
+                                                                    disabled=${busy}
+                                                                    onClick=${() =>
+                                                                        updateLeaveStatus(
+                                                                            lv,
+                                                                            "approved",
+                                                                        )}
+                                                                >
+                                                                    Approve
+                                                                </button>`}
+                                                                ${lv.status !==
+                                                                    "rejected" &&
+                                                                html`<button
+                                                                    class="btn sm"
+                                                                    type="button"
+                                                                    disabled=${busy}
+                                                                    onClick=${() =>
+                                                                        updateLeaveStatus(
+                                                                            lv,
+                                                                            "rejected",
+                                                                        )}
+                                                                >
+                                                                    Reject
+                                                                </button>`}
+                                                                <button
+                                                                    class="btn sm"
+                                                                    type="button"
+                                                                    onClick=${() =>
+                                                                        setEdit({
+                                                                            ...lv,
+                                                                        })}
+                                                                >
+                                                                    Edit
+                                                                </button>
+                                                                <button
+                                                                    class="btn sm ghost"
+                                                                    type="button"
+                                                                    style=${{
+                                                                        color: "var(--danger)",
+                                                                    }}
+                                                                    onClick=${() =>
+                                                                        setDel(lv.id)}
+                                                                >
+                                                                    Delete
+                                                                </button>
+                                                            </div>`}
+                                                  </td>
+                                              </tr>`;
+                                          })}
+                                      </tbody>
+                                  </table>
+                              </div>`}
+                    </div>
+                </${React.Fragment}>`;
+            }
+
             /*  APP  */
             function App() {
                 const [ready, setReady] = useState(false);
@@ -5205,7 +7004,13 @@ const { useState, useEffect, useMemo, useRef } = React;
                 const [date, setDate] = useState(todayStr());
                 const [days, setDays] = useState([]);
                 const [bills, setBills] = useState([]);
-                const [tab, setTab] = useState("home");
+                const [tab, setTab] = useState(() =>
+                    typeof window !== "undefined" &&
+                    window.location &&
+                    window.location.pathname === "/admin/employees"
+                        ? "employees"
+                        : "home",
+                );
                 const [pageSearch, setPageSearch] = useState("");
                 const [sid, setSid] = useState(null);
                 const [needsSetup, setNeedsSetup] = useState(false);
@@ -5403,6 +7208,13 @@ const { useState, useEffect, useMemo, useRef } = React;
                 const vBills = limit
                     ? bills.filter((d) => limit.includes(d.routeId))
                     : bills;
+                const isAdmin = !!(
+                    acc &&
+                    (meV.isOwner ||
+                        acc.role === "owner" ||
+                        acc.role === "admin" ||
+                        acc.can("users"))
+                );
                 const tabs = !acc
                     ? []
                     : [
@@ -5414,6 +7226,7 @@ const { useState, useEffect, useMemo, useRef } = React;
                           ...(acc.can("reports")
                               ? [["reports", "Reports"]]
                               : []),
+                          ...(isAdmin ? [["employees", "Employee"]] : []),
                           ...(ADMIN_PERMS.some((k) => acc.can(k))
                               ? [
                                     [
@@ -5450,7 +7263,9 @@ const { useState, useEffect, useMemo, useRef } = React;
                     },
                     {
                         label: "Management",
-                        items: tabs.filter(([id]) => id === "admin"),
+                        items: tabs.filter(([id]) =>
+                            ["employees", "admin"].includes(id),
+                        ),
                     },
                 ].filter((group) => group.items.length);
                 const waiting =
@@ -5596,18 +7411,20 @@ const { useState, useEffect, useMemo, useRef } = React;
                                   limit=${limit}
                                   toast=${toast}
                               />`
-                            : html`<${AdminView}
-                                  routes=${routes}
-                                  shops=${shops}
-                                  itemList=${itemList}
-                                  items=${items}
-                                  acc=${acc}
-                                  users=${users}
-                                  requests=${requests}
-                                  userNs=${userNs}
-                                  me=${meV}
-                                  toast=${toast}
-                              />`
+                            : curTab === "employees"
+                              ? html`<${EmployeesView} toast=${toast} />`
+                              : html`<${AdminView}
+                                    routes=${routes}
+                                    shops=${shops}
+                                    itemList=${itemList}
+                                    items=${items}
+                                    acc=${acc}
+                                    users=${users}
+                                    requests=${requests}
+                                    userNs=${userNs}
+                                    me=${meV}
+                                    toast=${toast}
+                                />`
       }
     </main>
         </div>
