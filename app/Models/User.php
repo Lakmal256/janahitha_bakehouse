@@ -99,6 +99,11 @@ class User extends Authenticatable
         return (bool) ($this->perms[$permission] ?? $rolePermissions[$permission] ?? false);
     }
 
+    public function isAdmin(): bool
+    {
+        return $this->is_owner || $this->role === 'admin' || $this->canPermission('users');
+    }
+
     /**
      * Whether the account sees every route and shop, either because it works on all routes
      * or because it manages shops, routes or users.

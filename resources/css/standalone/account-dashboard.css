@@ -412,6 +412,7 @@
             .nav-icon-orders::before { content: "▦"; }
             .nav-icon-bills::before { content: "▤"; }
             .nav-icon-reports::before { content: "▥"; }
+            .nav-icon-employees::before { content: "♟"; }
             .nav-icon-admin::before { content: "⚙"; }
             .side-account {
                 min-width: 0;

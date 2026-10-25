@@ -34,5 +34,7 @@ class AppServiceProvider extends ServiceProvider
         foreach (User::PERMISSIONS as $permission) {
             Gate::define($permission, fn (User $user): bool => $user->canPermission($permission));
         }
+
+        Gate::define('employees', fn (User $user): bool => $user->isAdmin());
     }
 }

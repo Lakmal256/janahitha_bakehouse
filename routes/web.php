@@ -3,8 +3,11 @@
 use App\Http\Controllers\Api\BillController;
 use App\Http\Controllers\Api\CatalogController;
 use App\Http\Controllers\Api\DayController;
+use App\Http\Controllers\Api\EmployeeController;
+use App\Http\Controllers\Api\EmployeeLeaveController;
 use App\Http\Controllers\Api\ImportController;
 use App\Http\Controllers\Api\RouteController;
+use App\Http\Controllers\Api\SalaryAdvanceController;
 use App\Http\Controllers\Api\SessionController;
 use App\Http\Controllers\Api\ShopController;
 use App\Http\Controllers\Api\UserController;
@@ -14,10 +17,10 @@ use App\Livewire\Admin\Routes as RouteManagement;
 use App\Livewire\Admin\Shops as ShopManagement;
 use App\Livewire\Admin\Users as UserManagement;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Route;
 
 Route::view('/', 'bakehouse')->name('home');
 
@@ -54,6 +57,10 @@ Route::middleware(['auth', 'active'])->group(function (): void {
     Route::get('/admin/shops', ShopManagement::class)
         ->middleware('can:shops')
         ->name('admin.shops');
+
+    Route::view('/admin/employees', 'bakehouse')
+        ->middleware('can:employees')
+        ->name('admin.employees');
 });
 
 Route::prefix('api')->name('api.')->group(function (): void {
@@ -86,6 +93,20 @@ Route::prefix('api')->name('api.')->group(function (): void {
         Route::match(['put', 'patch'], 'bills/{key}', [BillController::class, 'update'])->name('bills.update');
         Route::delete('bills/{key}', [BillController::class, 'destroy'])->name('bills.destroy');
 
+        Route::middleware('can:employees')->group(function (): void {
+            Route::get('employees', [EmployeeController::class, 'index'])->name('employees.index');
+            Route::match(['put', 'patch'], 'employees/{key}', [EmployeeController::class, 'update'])->name('employees.update');
+            Route::delete('employees/{key}', [EmployeeController::class, 'destroy'])->name('employees.destroy');
+
+            Route::get('salary-advances', [SalaryAdvanceController::class, 'index'])->name('salary-advances.index');
+            Route::match(['put', 'patch'], 'salary-advances/{key}', [SalaryAdvanceController::class, 'update'])->name('salary-advances.update');
+            Route::delete('salary-advances/{key}', [SalaryAdvanceController::class, 'destroy'])->name('salary-advances.destroy');
+
+            Route::get('employee-leaves', [EmployeeLeaveController::class, 'index'])->name('employee-leaves.index');
+            Route::match(['put', 'patch'], 'employee-leaves/{key}', [EmployeeLeaveController::class, 'update'])->name('employee-leaves.update');
+            Route::delete('employee-leaves/{key}', [EmployeeLeaveController::class, 'destroy'])->name('employee-leaves.destroy');
+        });
+
         Route::post('imports', [ImportController::class, 'store'])->name('imports.store');
     });
 });
@@ -97,13 +118,13 @@ Route::post('/deploy/finalize', function (Request $request) {
     }
 
     $zipPath = base_path('release.zip');
-    if (!file_exists($zipPath)) {
-        return response()->json(['error' => 'release.zip not found at ' . $zipPath], 404);
+    if (! file_exists($zipPath)) {
+        return response()->json(['error' => 'release.zip not found at '.$zipPath], 404);
     }
 
     try {
-        $zip = new \ZipArchive();
-        if ($zip->open($zipPath) === TRUE) {
+        $zip = new ZipArchive;
+        if ($zip->open($zipPath) === true) {
             $zip->extractTo(base_path());
             $zip->close();
             @unlink($zipPath);
@@ -118,10 +139,11 @@ Route::post('/deploy/finalize', function (Request $request) {
 
         return response()->json([
             'status' => 'success',
-            'message' => 'Release extracted and Laravel caches refreshed!'
+            'message' => 'Release extracted and Laravel caches refreshed!',
         ]);
-    } catch (\Exception $e) {
-        Log::error('Deployment failed: ' . $e->getMessage());
+    } catch (Exception $e) {
+        Log::error('Deployment failed: '.$e->getMessage());
+
         return response()->json(['error' => $e->getMessage()], 500);
     }
 });
