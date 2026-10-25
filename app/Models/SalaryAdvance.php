@@ -18,6 +18,7 @@ class SalaryAdvance extends Model
         'amount',
         'request_date',
         'salary_month',
+        'reason',
         'status',
         'created_by',
     ];

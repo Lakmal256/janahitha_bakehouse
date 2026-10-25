@@ -29,6 +29,7 @@ return new class extends Migration
             $table->decimal('amount', 10, 2);
             $table->date('request_date');
             $table->string('salary_month', 7);
+            $table->text('reason')->nullable();
             $table->string('status', 30)->default('pending');
             $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamps();

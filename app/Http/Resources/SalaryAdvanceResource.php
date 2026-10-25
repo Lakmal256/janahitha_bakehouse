@@ -25,6 +25,7 @@ class SalaryAdvanceResource extends JsonResource
             'amount' => (float) $this->amount,
             'requestDate' => $this->request_date?->format('Y-m-d'),
             'salaryMonth' => $this->salary_month,
+            'reason' => $this->reason ?? '',
             'status' => $this->status,
             'createdAt' => $this->created_at?->getTimestampMs(),
         ];

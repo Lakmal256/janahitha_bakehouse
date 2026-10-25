@@ -86,6 +86,10 @@ class SalaryAdvanceController extends Controller
             $advance->salary_month = $data['salaryMonth'];
         }
 
+        if ($replace || array_key_exists('reason', $data)) {
+            $advance->reason = isset($data['reason']) ? trim((string) $data['reason']) : null;
+        }
+
         if ($replace || array_key_exists('status', $data)) {
             $advance->status = $data['status'] ?? 'pending';
         } elseif (! $advance->exists) {

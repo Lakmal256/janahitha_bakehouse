@@ -5673,6 +5673,7 @@ const { useState, useEffect, useMemo, useRef } = React;
                 const [amount, setAmount] = useState("");
                 const [requestDate, setRequestDate] = useState(todayStr());
                 const [salaryMonth, setSalaryMonth] = useState(defaultMonth);
+                const [reason, setReason] = useState("");
                 const [status, setStatus] = useState("approved");
                 const [filterMonth, setFilterMonth] = useState(defaultMonth);
                 const [filterEmp, setFilterEmp] = useState("all");
@@ -5716,9 +5717,11 @@ const { useState, useEffect, useMemo, useRef } = React;
                             amount: Number(amount),
                             requestDate,
                             salaryMonth,
+                            reason: reason.trim(),
                             status,
                         });
                         setAmount("");
+                        setReason("");
                         toast("Salary advance recorded");
                     } catch (err) {
                         toast(
@@ -5754,6 +5757,7 @@ const { useState, useEffect, useMemo, useRef } = React;
                             amount: Number(edit.amount),
                             requestDate: edit.requestDate,
                             salaryMonth: edit.salaryMonth,
+                            reason: (edit.reason || "").trim(),
                             status: edit.status,
                         });
                         setEdit(null);
@@ -5914,6 +5918,15 @@ const { useState, useEffect, useMemo, useRef } = React;
                                 </select>
                             </div>
                         </div>
+                        <div class="field">
+                            <label class="label" for="adv-reason">Reason</label>
+                            <input
+                                id="adv-reason"
+                                value=${reason}
+                                onChange=${(e) => setReason(e.target.value)}
+                                placeholder="Optional reason or note"
+                            />
+                        </div>
                         <div>
                             <button
                                 class="btn primary"
@@ -6066,6 +6079,9 @@ const { useState, useEffect, useMemo, useRef } = React;
                                                   Salary month
                                               </th>
                                               <th>Amount</th>
+                                              <th style=${{ textAlign: "left" }}>
+                                                  Reason
+                                              </th>
                                               <th>Status</th>
                                               <th>Actions</th>
                                           </tr>
@@ -6147,6 +6163,20 @@ const { useState, useEffect, useMemo, useRef } = React;
                                                                   })}
                                                           />
                                                       </td>
+                                                      <td style=${{ textAlign: "left" }}>
+                                                          <input
+                                                              class="sel"
+                                                              value=${edit.reason ||
+                                                              ""}
+                                                              onChange=${(e) =>
+                                                                  setEdit({
+                                                                      ...edit,
+                                                                      reason: e
+                                                                          .target
+                                                                          .value,
+                                                                  })}
+                                                          />
+                                                      </td>
                                                       <td>
                                                           <select
                                                               class="sel"
@@ -6207,6 +6237,9 @@ const { useState, useEffect, useMemo, useRef } = React;
                                                       ${niceMonth(adv.salaryMonth)}
                                                   </td>
                                                   <td><b>${rs(adv.amount)}</b></td>
+                                                  <td style=${{ textAlign: "left" }}>
+                                                      ${adv.reason || "–"}
+                                                  </td>
                                                   <td>
                                                       <${EmpStatusPill}
                                                           status=${adv.status}

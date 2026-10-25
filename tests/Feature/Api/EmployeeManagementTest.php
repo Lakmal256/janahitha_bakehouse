@@ -90,10 +90,12 @@ class EmployeeManagementTest extends TestCase
                 'amount' => 5000,
                 'requestDate' => '2026-10-10',
                 'salaryMonth' => '2026-10',
+                'reason' => 'Medical expense',
                 'status' => 'approved',
             ])
             ->assertCreated()
             ->assertJsonPath('data.amount', 5000)
+            ->assertJsonPath('data.reason', 'Medical expense')
             ->assertJsonPath('data.status', 'approved');
 
         $this->actingAs($owner)

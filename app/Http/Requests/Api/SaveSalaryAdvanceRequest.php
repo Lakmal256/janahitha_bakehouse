@@ -31,6 +31,7 @@ class SaveSalaryAdvanceRequest extends FormRequest
             'amount' => [$required, 'numeric', 'gt:0', 'max:99999999.99'],
             'requestDate' => [$required, 'date_format:Y-m-d'],
             'salaryMonth' => [$required, 'string', 'regex:/^\d{4}-(0[1-9]|1[0-2])$/'],
+            'reason' => ['sometimes', 'nullable', 'string', 'max:1000'],
             'status' => ['sometimes', 'string', Rule::in(SalaryAdvance::STATUSES)],
         ];
     }
